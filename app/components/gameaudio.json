@@ -1,0 +1,260 @@
+{
+  "resources": [
+    "./resource/assets/sounds/desktop/gameaudio.ogg",
+    "./resource/assets/sounds/desktop/gameaudio.m4a",
+    "./resource/assets/sounds/desktop/gameaudio.mp3",
+    "./resource/assets/sounds/desktop/gameaudio.ac3"
+  ],
+  "spritemap": {
+    "ambience": {
+      "start": 0,
+      "end": 38.62503401360544,
+      "loop": false
+    },
+    "ball_crack_high": {
+      "start": 40,
+      "end": 40.421950113378685,
+      "loop": false
+    },
+    "ball_crack_low": {
+      "start": 42,
+      "end": 42.43637188208617,
+      "loop": false
+    },
+    "ball_crack_middle": {
+      "start": 44,
+      "end": 44.281995464852606,
+      "loop": false
+    },
+    "ball_spin_end": {
+      "start": 46,
+      "end": 46.64616780045351,
+      "loop": false
+    },
+    "ball_spin_loop": {
+      "start": 48,
+      "end": 49.1936507936508,
+      "loop": false
+    },
+    "ball_spin_stop": {
+      "start": 51,
+      "end": 51.265578231292515,
+      "loop": false
+    },
+    "basic_background": {
+      "start": 53,
+      "end": 94.14285714285714,
+      "loop": false
+    },
+    "bell": {
+      "start": 96,
+      "end": 97.5663492063492,
+      "loop": false
+    },
+    "big_win_end": {
+      "start": 99,
+      "end": 99.74303854875284,
+      "loop": false
+    },
+    "big_win": {
+      "start": 101,
+      "end": 103.21609977324263,
+      "loop": false
+    },
+    "button": {
+      "start": 105,
+      "end": 105.20503401360544,
+      "loop": false
+    },
+    "collect": {
+      "start": 107,
+      "end": 107.96403628117913,
+      "loop": false
+    },
+    "counter_end": {
+      "start": 109,
+      "end": 111.60802721088436,
+      "loop": false
+    },
+    "counter": {
+      "start": 113,
+      "end": 114.02167800453515,
+      "loop": false
+    },
+    "frog_0": {
+      "start": 116,
+      "end": 116.81201814058957,
+      "loop": false
+    },
+    "frog_1": {
+      "start": 118,
+      "end": 118.35333333333334,
+      "loop": false
+    },
+    "frog_2": {
+      "start": 120,
+      "end": 122.47736961451247,
+      "loop": false
+    },
+    "frog_3": {
+      "start": 124,
+      "end": 125.20802721088435,
+      "loop": false
+    },
+    "frog_4": {
+      "start": 127,
+      "end": 128.12,
+      "loop": false
+    },
+    "frog_drown_0": {
+      "start": 130,
+      "end": 130.9693424036281,
+      "loop": false
+    },
+    "frog_drown_1": {
+      "start": 132,
+      "end": 132.95736961451246,
+      "loop": false
+    },
+    "frog_drown_2": {
+      "start": 134,
+      "end": 134.95868480725625,
+      "loop": false
+    },
+    "head_hit_angry_0": {
+      "start": 136,
+      "end": 137.23133786848072,
+      "loop": false
+    },
+    "head_hit_angry_1": {
+      "start": 139,
+      "end": 140.23133786848072,
+      "loop": false
+    },
+    "head_hit_standard_0": {
+      "start": 142,
+      "end": 142.680589569161,
+      "loop": false
+    },
+    "head_hit_standard_1": {
+      "start": 144,
+      "end": 144.680589569161,
+      "loop": false
+    },
+    "head_hit_very_angry_0": {
+      "start": 146,
+      "end": 146.83673469387756,
+      "loop": false
+    },
+    "head_hit_very_angry_1": {
+      "start": 148,
+      "end": 148.83591836734695,
+      "loop": false
+    },
+    "head_rampage_crush_0": {
+      "start": 150,
+      "end": 151.40036281179138,
+      "loop": false
+    },
+    "head_rampage_crush_1": {
+      "start": 153,
+      "end": 154.40149659863945,
+      "loop": false
+    },
+    "head_rampage_crush_2": {
+      "start": 156,
+      "end": 157.16897959183675,
+      "loop": false
+    },
+    "head_rampage_crush_3": {
+      "start": 159,
+      "end": 160.4806349206349,
+      "loop": false
+    },
+    "head_rampage_crush_4": {
+      "start": 162,
+      "end": 163.1843537414966,
+      "loop": false
+    },
+    "jackpot_change_end": {
+      "start": 165,
+      "end": 168.1474829931973,
+      "loop": false
+    },
+    "jackpot_change_loop": {
+      "start": 170,
+      "end": 173.26104308390023,
+      "loop": false
+    },
+    "land_0": {
+      "start": 175,
+      "end": 175.59868480725623,
+      "loop": false
+    },
+    "land_1": {
+      "start": 177,
+      "end": 177.59868480725623,
+      "loop": false
+    },
+    "land_2": {
+      "start": 179,
+      "end": 179.5960090702948,
+      "loop": false
+    },
+    "land_3": {
+      "start": 181,
+      "end": 181.5960090702948,
+      "loop": false
+    },
+    "land_4": {
+      "start": 183,
+      "end": 184.65600907029477,
+      "loop": false
+    },
+    "lilly_appear": {
+      "start": 186,
+      "end": 187,
+      "loop": false
+    },
+    "lilly_click": {
+      "start": 188,
+      "end": 189.2,
+      "loop": false
+    },
+    "lilly_disappear": {
+      "start": 191,
+      "end": 192.1875283446712,
+      "loop": false
+    },
+    "lilly_spin": {
+      "start": 194,
+      "end": 196.75002267573697,
+      "loop": false
+    },
+    "popup_win": {
+      "start": 198,
+      "end": 200.8928798185941,
+      "loop": false
+    },
+    "rampage_activate": {
+      "start": 202,
+      "end": 205.9302947845805,
+      "loop": false
+    },
+    "rampage_background": {
+      "start": 207,
+      "end": 238.99709750566893,
+      "loop": false
+    },
+    "win_jackpot": {
+      "start": 240,
+      "end": 242.1607709750567,
+      "loop": false
+    },
+    "win": {
+      "start": 244,
+      "end": 246.1362358276644,
+      "loop": false
+    }
+  }
+}
