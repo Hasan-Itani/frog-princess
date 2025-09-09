@@ -27,17 +27,22 @@ function makeRotations(seed, padsPerRow) {
 
 export default function GameBoard() {
   const {
-    isPlaying, startRun, advanceOneLevel,
-    showWinOverlay, overlayAmount, format,
-    level, levelsCount,
+    isPlaying,
+    startRun,
+    advanceOneLevel,
+    showWinOverlay,
+    overlayAmount,
+    format,
+    level,
+    levelsCount,
   } = useGame();
 
   const padsPerRow = 5;
-  const windowSize = 5;              // always 5 rows
-  const ROCK_SPACE = 96;             // px reserved above bottom for the rock (tweak if needed)
-  const LILY_BTN = 72;               // button box (px) ~ w-18/h-18; tweak for bigger/smaller
-  const LILY_IMG = 80;               // lily image size in px
-  const BADGE_W = 48;                // multiplier badge size in px
+  const windowSize = 5; // always 5 rows
+  const ROCK_SPACE = 96; // px reserved above bottom for the rock (tweak if needed)
+  const LILY_BTN = 72; // button box (px) ~ w-18/h-18; tweak for bigger/smaller
+  const LILY_IMG = 80; // lily image size in px
+  const BADGE_W = 48; // multiplier badge size in px
   const BADGE_GUTTER = BADGE_W + 16; // left gutter to avoid overlap
 
   // frog visual state
@@ -79,10 +84,7 @@ export default function GameBoard() {
   return (
     <div className="relative w-full h-full">
       {/* ROWS: absolutely positioned with reserved space for the rock */}
-      <div
-        className="absolute inset-x-0"
-        style={{ bottom: ROCK_SPACE }}
-      >
+      <div className="absolute inset-x-0" style={{ bottom: ROCK_SPACE }}>
         {visibleIndices.map((rowIndexGlobal) => {
           const mult = MULTIPLIERS[rowIndexGlobal];
           const isClickable = rowIndexGlobal === level;
@@ -90,21 +92,35 @@ export default function GameBoard() {
           const rowOpacity = opacityForRow(rowIndexGlobal, level);
 
           return (
-            <div key={rowIndexGlobal} className="relative" style={{ paddingLeft: BADGE_GUTTER }}>
+            <div
+              key={rowIndexGlobal}
+              className="relative"
+              style={{ paddingLeft: BADGE_GUTTER }}
+            >
               <div className="flex items-center justify-center gap-3 py-1.5">
                 {Array.from({ length: padsPerRow }).map((_, col) => {
-                  const isFrogHere = rowIndexGlobal === frogRow && frogCol === col;
+                  const isFrogHere =
+                    rowIndexGlobal === frogRow && frogCol === col;
                   const padOpacity = isFrogHere ? 1 : rowOpacity;
 
                   return (
                     <button
                       key={col}
-                      onClick={() => (isClickable ? onPadClick(rowIndexGlobal, col) : null)}
+                      onClick={() =>
+                        isClickable ? onPadClick(rowIndexGlobal, col) : null
+                      }
                       disabled={!isClickable}
                       className={`relative rounded-full grid place-items-center transition-transform ${
-                        isClickable ? "hover:scale-105 cursor-pointer" : "cursor-default"
+                        isClickable
+                          ? "hover:scale-105 cursor-pointer"
+                          : "cursor-default"
                       }`}
-                      style={{ width: LILY_BTN, height: LILY_BTN, opacity: padOpacity, zIndex: isFrogHere ? 10 : 1 }}
+                      style={{
+                        width: LILY_BTN,
+                        height: LILY_BTN,
+                        opacity: padOpacity,
+                        zIndex: isFrogHere ? 10 : 1,
+                      }}
                       title={isClickable ? "Jump" : ""}
                     >
                       <Image
@@ -132,7 +148,12 @@ export default function GameBoard() {
               {/* Multiplier badge on the left; uses dedicated gutter so it never collides */}
               <div
                 className="absolute top-1/2 -translate-y-1/2"
-                style={{ left: 8, opacity: rowOpacity, width: BADGE_W, height: BADGE_W }}
+                style={{
+                  left: 8,
+                  opacity: rowOpacity,
+                  width: BADGE_W,
+                  height: BADGE_W,
+                }}
               >
                 <div className="relative w-full h-full">
                   <Image
@@ -184,7 +205,9 @@ export default function GameBoard() {
             />
             <div className="absolute inset-0 grid place-items-center text-center px-6">
               <div>
-                <div className="text-yellow-300 text-lg font-extrabold">CONGRATULATIONS</div>
+                <div className="text-yellow-300 text-lg font-extrabold">
+                  CONGRATULATIONS
+                </div>
                 <div className="text-sm opacity-90">you won</div>
                 <div className="text-2xl font-extrabold mt-1 text-white">
                   {format(overlayAmount)}

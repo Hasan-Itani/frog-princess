@@ -1,6 +1,7 @@
 "use client";
 import { useGame } from "../hooks/useGame";
-import { useState } from "react";
+import IconButton from "./ui/IconButton";
+import CollectButton from "./ui/CollectButton";
 
 export default function Controls({ onOpenSettings }) {
   const {
@@ -17,41 +18,11 @@ export default function Controls({ onOpenSettings }) {
     collectNow,
     canIncrementBet,
     canDecrementBet,
+    showWinOverlay, // <-- we’ll use this to hide the button under overlay
   } = useGame();
 
-  const showCollect = isPlaying && level > 0; // only after a run has started
-
-  function IconButton({ icon, hoverIcon, activeIcon, isActive, onClick, alt }) {
-    const [hover, setHover] = useState(false);
-    const [press, setPress] = useState(false);
-
-    const getIcon = () => {
-      if (press) return activeIcon;
-      if (isActive) return activeIcon;
-      if (hover) return hoverIcon;
-      return icon;
-    };
-
-    return (
-      <button
-        onClick={onClick}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => {
-          setHover(false);
-          setPress(false);
-        }}
-        onMouseDown={() => setPress(true)}
-        onMouseUp={() => setPress(false)}
-        className="w-10 h-10 flex items-center justify-center"
-      >
-        <img
-          src={getIcon()}
-          alt={alt}
-          className="w-full h-full object-contain"
-        />
-      </button>
-    );
-  }
+  // Show only after the run starts, and hide while the overlay is up
+  const showCollect = isPlaying && level > 0 && !showWinOverlay;
 
   return (
     <div className="relative z-20 pointer-events-auto w-full text-white px-3 py-2 space-y-2">
@@ -66,24 +37,12 @@ export default function Controls({ onOpenSettings }) {
         />
 
         <div className="flex-1 flex items-center justify-center">
-          {showCollect && (
-            <div
-              onClick={collectNow}
-              className="relative cursor-pointer animate-scaleUp"
-              title="Collect your current winnings"
-            >
-              <img
-                src="/green_button.png"
-                alt="Collect"
-                className="w-56 h-16 object-contain drop-shadow-lg"
-              />
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-black font-extrabold">
-                <span className="text-lg leading-tight">COLLECT</span>
-                <span className="text-sm">{format(currentWin)}</span>
-              </div>
-            </div>
-          )}
+          <CollectButton
+            show={showCollect}
+            amount={currentWin}
+            format={format}
+            onCollect={collectNow}
+          />
         </div>
 
         <IconButton
@@ -109,7 +68,7 @@ export default function Controls({ onOpenSettings }) {
             disabled={isPlaying || !canDecrementBet}
             aria-label="Decrease bet"
           >
-            –
+            -
           </button>
           <div className="text-center">
             <div className="text-[10px] leading-3 opacity-70">SET BET</div>
@@ -126,7 +85,9 @@ export default function Controls({ onOpenSettings }) {
         </div>
 
         <div className="text-right min-w-[92px]">
-          <div className="text-[10px] leading-3 opacity-70 text-center">WIN</div>
+          <div className="text-[10px] leading-3 opacity-70 text-center">
+            WIN
+          </div>
           {currentWin > 0 ? (
             <div className="text-green-400 font-bold">{format(currentWin)}</div>
           ) : (

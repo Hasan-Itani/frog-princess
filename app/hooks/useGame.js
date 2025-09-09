@@ -32,6 +32,7 @@ export function GameProvider({ children }) {
   const [finishReason, setFinishReason] = useState(null); // "collect" | "all" | "drop" | null
   const [showWinOverlay, setShowWinOverlay] = useState(false);
   const [overlayAmount, setOverlayAmount] = useState(0);
+  const [finishing, setFinishing] = useState(false);
 
   const canDecrementBet = betIndex > 0;
   const canIncrementBet = betIndex < BET_STEPS.length - 1;
@@ -50,6 +51,14 @@ export function GameProvider({ children }) {
     setLevel(0);
     setCurrentWin(0);
     setFinishReason(null);
+  }
+  function collectNow() {
+    if (!isPlaying || finishing) return;
+    finishRun("collect", currentWin);
+  }
+  function dropNow() {
+    if (!isPlaying || finishing) return;
+    finishRun("drop", 0);
   }
 
   function startRun() {
@@ -96,10 +105,13 @@ export function GameProvider({ children }) {
   }
 
   function finishRun(reason, amount) {
+    if (finishing || !isPlaying) return;
+    setFinishing(true);
     setFinishReason(reason);
     if (amount > 0) setBalance((b) => +(b + amount).toFixed(2));
     setOverlayAmount(amount);
-    setShowWinOverlay(true);
+    // Give the collect button ~220ms to animate out before overlay covers it
+    setTimeout(() => setShowWinOverlay(true), 220);
   }
 
   // Hide overlay then reset run
@@ -107,6 +119,7 @@ export function GameProvider({ children }) {
     if (!showWinOverlay) return;
     const t = setTimeout(() => {
       setShowWinOverlay(false);
+      setFinishing(false); // <--- reset guard
       resetRun();
     }, 2200);
     return () => clearTimeout(t);
@@ -138,6 +151,9 @@ export function GameProvider({ children }) {
     advanceOneLevel,
     collectNow,
     dropNow,
+    setBetByIndex: (idx) => {
+      if (idx >= 0 && idx < BET_STEPS.length) setBetIndex(idx);
+    },
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
