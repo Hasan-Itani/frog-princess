@@ -5,7 +5,7 @@ import Controls from "./components/Controls";
 
 export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("rules"); // rules | bet | info | settings
+  const [activeTab, setActiveTab] = useState("rules");
 
   return (
     <div
@@ -13,12 +13,10 @@ export default function Home() {
     >
       <div className="relative w-[30%] min-w-[320px] max-w-[400px] h-[100vh] bg-[url('/game-img.jpg')] bg-cover bg-center shadow-xl flex flex-col overflow-hidden">
         
-        {/* Game board */}
         <div className="flex-1 flex items-center justify-center bg-transparent">
           <GameBoard />
         </div>
 
-        {/* Controls */}
         <div className="h-[120px] bg-black/70 p-4 flex flex-col items-center justify-center">
           <Controls onOpenSettings={() => {
             setSettingsOpen(true);
@@ -26,18 +24,15 @@ export default function Home() {
           }} />
         </div>
 
-        {/* Overlay */}
         {settingsOpen && (
           <div className="absolute inset-0 bg-black/85 text-white z-50 animate-slideIn flex flex-col">
             
-            {/* Заголовок */}
             <div className="bg-black/90 text-yellow-400 text-lg font-bold text-center py-3">
               {activeTab === "bet" && "BET SETTINGS"}
               {activeTab === "rules" && "RULES"}
               {activeTab === "settings" && "SETTINGS"}
             </div>
 
-            {/* Контент */}
             <div className="flex-1 overflow-y-auto p-4 text-center space-y-6">
 
               {activeTab === "bet" && (
@@ -72,7 +67,6 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* AWARDS */}
                   <div>
                     <h2 className="text-yellow-300 font-bold mb-2">AWARDS</h2>
                     <p className="text-sm leading-relaxed">
@@ -96,7 +90,6 @@ export default function Home() {
                     </ul>
                   </div>
 
-                  {/* GAME FUNCTIONS */}
                   <div>
                     <h2 className="text-yellow-300 font-bold mb-2">GAME FUNCTIONS</h2>
                     <p className="text-sm leading-relaxed mb-3">
@@ -118,7 +111,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* GAME SETTINGS AND INFO */}
                   <div>
                     <h2 className="text-yellow-300 font-bold mb-2">GAME SETTINGS AND GAME INFORMATION</h2>
                     <div className="space-y-3 text-left">
@@ -141,7 +133,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* ADDITIONAL INFO */}
                   <div>
                     <h2 className="text-yellow-300 font-bold mb-2">ADDITIONAL INFORMATION</h2>
                     <p className="text-sm leading-relaxed">
@@ -152,7 +143,6 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* RETURN TO PLAYER */}
                   <div>
                     <h2 className="text-yellow-300 font-bold mb-2">RETURN TO PLAYER</h2>
                     <p className="text-sm leading-relaxed">
@@ -176,7 +166,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Нижние кнопки */}
             <div className="flex items-center justify-around bg-black/90 py-3">
               <button onClick={() => setActiveTab("bet")} className="text-yellow-400 text-2xl">💰</button>
               <button onClick={() => setActiveTab("rules")} className="text-white text-2xl">ℹ️</button>
