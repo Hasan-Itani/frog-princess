@@ -8,7 +8,7 @@ export default function IconButton({
   isActive,
   onClick,
   alt,
-  size = 14, // Tailwind size token, e.g. 14 → w-14 h-14
+  size = 14,
   className = "",
 }) {
   const [hover, setHover] = useState(false);

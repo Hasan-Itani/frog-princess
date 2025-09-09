@@ -18,10 +18,9 @@ export default function Controls({ onOpenSettings }) {
     collectNow,
     canIncrementBet,
     canDecrementBet,
-    showWinOverlay, // <-- we’ll use this to hide the button under overlay
+    showWinOverlay,
   } = useGame();
 
-  // Show only after the run starts, and hide while the overlay is up
   const showCollect = isPlaying && level > 0 && !showWinOverlay;
 
   return (

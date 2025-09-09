@@ -6,7 +6,7 @@ export default function useBetQuickPick() {
     useGame();
 
   function setBetTarget(idx) {
-    if (isPlaying) return; // can't change mid-round
+    if (isPlaying) return;
     if (idx === betIndex) return;
 
     if (typeof setBetByIndex === "function") {
@@ -14,7 +14,6 @@ export default function useBetQuickPick() {
       return;
     }
 
-    // fallback: move step-by-step
     const delta = idx - betIndex;
     const step = delta > 0 ? incrementBet : decrementBet;
     for (let i = 0; i < Math.abs(delta); i++) step();

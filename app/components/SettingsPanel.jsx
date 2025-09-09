@@ -9,7 +9,7 @@ import RulesContent from "./RulesContent";
 import useBetQuickPick from "../hooks/useBetQuickPick";
 
 export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
-  const [phase, setPhase] = useState("enter"); // enter → idle → exit
+  const [phase, setPhase] = useState("enter"); 
 
   const { BET_STEPS = [], betIndex, isPlaying, format } = useGame();
   const { setBetTarget } = useBetQuickPick();

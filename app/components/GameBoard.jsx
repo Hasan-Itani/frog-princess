@@ -3,7 +3,6 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useGame, MULTIPLIERS } from "../hooks/useGame";
 
-// Opacity: next=100%, then 80/60/40/20; finished lines (<= level-1) at 50% except frog pad
 function opacityForRow(rowIndex, level) {
   if (rowIndex === level) return 1;
   if (rowIndex === level - 1) return 0.5;
@@ -38,18 +37,16 @@ export default function GameBoard() {
   } = useGame();
 
   const padsPerRow = 5;
-  const windowSize = 5; // always 5 rows
-  const ROCK_SPACE = 96; // px reserved above bottom for the rock (tweak if needed)
-  const LILY_BTN = 72; // button box (px) ~ w-18/h-18; tweak for bigger/smaller
-  const LILY_IMG = 80; // lily image size in px
-  const BADGE_W = 48; // multiplier badge size in px
-  const BADGE_GUTTER = BADGE_W + 16; // left gutter to avoid overlap
+  const windowSize = 5;
+  const ROCK_SPACE = 96;
+  const LILY_BTN = 72;
+  const LILY_IMG = 80;
+  const BADGE_W = 48;
+  const BADGE_GUTTER = BADGE_W + 16;
 
-  // frog visual state
-  const [frogRow, setFrogRow] = useState(-1); // -1 = on rock
+  const [frogRow, setFrogRow] = useState(-1);
   const [frogCol, setFrogCol] = useState(2);
 
-  // Clamp a 5-row window (top->bottom) that never grows to 6
   const visibleIndices = useMemo(() => {
     const maxBottom = Math.max(0, levelsCount - windowSize);
     const bottom = Math.min(Math.max(level - 1, 0), maxBottom);
@@ -60,7 +57,6 @@ export default function GameBoard() {
   }, [level, levelsCount]);
 
   useEffect(() => {
-    // Keep frog anchored on the finished line (bottom of the window)
     if (!isPlaying && level === 0) {
       setFrogRow(-1);
       setFrogCol(2);
@@ -70,10 +66,8 @@ export default function GameBoard() {
   }, [isPlaying, level]);
 
   function onPadClick(rowIndexGlobal, col) {
-    // Only the "next" line is clickable
     if (rowIndexGlobal !== level) return;
 
-    // Start (deduct bet) and advance immediately on first click
     const ok = isPlaying || startRun();
     if (!ok) return;
 

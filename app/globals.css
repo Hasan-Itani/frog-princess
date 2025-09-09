@@ -99,10 +99,9 @@ body {
   animation: scaleUp 0.2s ease-out both;
 }
 
-/* Thin blue scrollbar for the INFO page */
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(56, 189, 248, 0.7) transparent; /* thumb | track */
+  scrollbar-color: rgba(56, 189, 248, 0.7) transparent; /
 }
 
 .custom-scroll::-webkit-scrollbar {
@@ -110,12 +109,12 @@ body {
 }
 
 .custom-scroll::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, 0.35); /* ~ slate-950/35 */
+  background: rgba(2, 6, 23, 0.35); 
   border-radius: 9999px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.7); /* sky-400/70 */
+  background: rgba(56, 189, 248, 0.7); 
   border-radius: 9999px;
 }
 
