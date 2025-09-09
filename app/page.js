@@ -156,7 +156,7 @@ export default function Home() {
                 <div className="space-y-3 text-left">
                   <div>
                     <p className="font-bold">Sound</p>
-                    <p className="text-sm">Click to mute game sound.</p>
+                    <p className="text-sm">Click to mute game sound more or less.</p>
                   </div>
                   <div>
                     <p className="font-bold">Menu</p>
