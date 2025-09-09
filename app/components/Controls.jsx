@@ -1,5 +1,6 @@
 "use client";
 import { useGame } from "../hooks/useGame";
+import { useState } from "react";
 
 export default function Controls({ onOpenSettings }) {
   const {
@@ -20,53 +21,87 @@ export default function Controls({ onOpenSettings }) {
 
   const showCollect = isPlaying && level > 0; // only after a run has started
 
+  function IconButton({ icon, hoverIcon, activeIcon, isActive, onClick, alt }) {
+    const [hover, setHover] = useState(false);
+    const [press, setPress] = useState(false);
+
+    const getIcon = () => {
+      if (press) return activeIcon;
+      if (isActive) return activeIcon;
+      if (hover) return hoverIcon;
+      return icon;
+    };
+
+    return (
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => {
+          setHover(false);
+          setPress(false);
+        }}
+        onMouseDown={() => setPress(true)}
+        onMouseUp={() => setPress(false)}
+        className="w-10 h-10 flex items-center justify-center"
+      >
+        <img
+          src={getIcon()}
+          alt={alt}
+          className="w-full h-full object-contain"
+        />
+      </button>
+    );
+  }
+
   return (
     <div className="relative z-20 pointer-events-auto w-full text-white px-3 py-2 space-y-2">
-      {/* Row 1: mute | collect | settings */}
       <div className="flex items-stretch justify-between">
-        {/* left: mute */}
-        <button
+        <IconButton
+          icon={muted ? "/audio_off_unhover.png" : "/audio_unhover.png"}
+          hoverIcon={muted ? "/audio_off_hover.png" : "/audio_hover.png"}
+          activeIcon={muted ? "/audio_off_hover.png" : "/audio_hover.png"}
+          isActive={false}
           onClick={() => setMuted(!muted)}
-          className="px-3 py-1.5 rounded-md bg-orange-400 hover:bg-yellow-400 text-sm"
-          aria-label={muted ? "Unmute" : "Mute"}
-          title={muted ? "Unmute" : "Mute"}
-        >
-          {muted ? "🔇" : "🔊"}
-        </button>
+          alt="Audio"
+        />
 
-        {/* middle: collect (only during run) */}
         <div className="flex-1 flex items-center justify-center">
           {showCollect && (
-            <button
+            <div
               onClick={collectNow}
-              className="px-4 py-1.5 rounded-md bg-yellow-400 text-black font-extrabold tracking-wide shadow hover:bg-yellow-300 leading-tight flex flex-col items-center"
+              className="relative cursor-pointer animate-scaleUp"
               title="Collect your current winnings"
             >
-              <span>COLLECT AMOUNT</span>
-              <span className="text-xs font-black">{format(currentWin)}</span>
-            </button>
+              <img
+                src="/green_button.png"
+                alt="Collect"
+                className="w-56 h-16 object-contain drop-shadow-lg"
+              />
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-black font-extrabold">
+                <span className="text-lg leading-tight">COLLECT</span>
+                <span className="text-sm">{format(currentWin)}</span>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* right: settings */}
-        <button
+        <IconButton
+          icon="/tabs_unhover.png"
+          hoverIcon="/tabs_hover.png"
+          activeIcon="/tabs_hover.png"
+          isActive={false}
           onClick={onOpenSettings}
-          className="px-3 py-1.5 rounded-md bg-yellow-600 hover:bg-yellow-500 font-bold"
-          title="Settings"
-        >
-          ⚙️
-        </button>
+          alt="Tabs"
+        />
       </div>
 
-      {/* Row 2: balance | set bet | win / good luck */}
       <div className="flex items-center justify-between">
-        {/* left: balance */}
         <div className="text-left">
           <div className="text-[10px] leading-3 opacity-70">BALANCE</div>
           <div className="font-bold">{format(balance)}</div>
         </div>
 
-        {/* middle: set bet */}
         <div className="flex items-center gap-2">
           <button
             onClick={decrementBet}
@@ -90,7 +125,6 @@ export default function Controls({ onOpenSettings }) {
           </button>
         </div>
 
-        {/* right: win / good luck */}
         <div className="text-right min-w-[92px]">
           <div className="text-[10px] leading-3 opacity-70 text-center">WIN</div>
           {currentWin > 0 ? (
