@@ -2,21 +2,16 @@
 import { useRef, useCallback } from "react";
 import spritemap from "../components/gameaudio.json";
 
-// Глобальные переменные для единого управления аудио
 let globalAudio = null;
 let globalMuted = false;
 let currentTimeUpdateListener = null;
 
 const initGlobalAudio = () => {
   if (typeof window === "undefined" || globalAudio) return globalAudio;
-  
+
   globalAudio = document.createElement("audio");
-  spritemap.resources.forEach((src) => {
-    const source = document.createElement("source");
-    source.src = src;
-    globalAudio.appendChild(source);
-  });
-  
+  globalAudio.src = spritemap.resources[0];
+
   return globalAudio;
 };
 
@@ -51,39 +46,40 @@ export default function useAudio() {
 
     const { start, end, loop } = clip;
 
-    // Снимаем предыдущего слушателя
     if (currentTimeUpdateListener) {
       audio.removeEventListener("timeupdate", currentTimeUpdateListener);
       currentTimeUpdateListener = null;
     }
 
-    // Ставим на начало куска
-    audio.pause();
     audio.currentTime = start;
-    audio.loop = !!loop;
+    audio.loop = false;
 
-    // Если кусок НЕ зацикленный → вручную останавливаем по окончании
     currentTimeUpdateListener = () => {
-      if (audio.currentTime >= end && !audio.loop) {
-        audio.pause();
-        audio.removeEventListener("timeupdate", currentTimeUpdateListener);
-        currentTimeUpdateListener = null;
+      if (audio.currentTime >= end) {
+        if (loop) {
+          audio.currentTime = start;
+        } else {
+          audio.pause();
+          audio.removeEventListener("timeupdate", currentTimeUpdateListener);
+          currentTimeUpdateListener = null;
+        }
       }
     };
 
     audio.addEventListener("timeupdate", currentTimeUpdateListener);
-    audio.play().catch(err => {
-      console.error("Audio play error:", err);
-    });
+
+    audio.play().catch((err) =>
+      console.error("Audio play error:", err)
+    );
   }, []);
 
   const stop = useCallback(() => {
     const audio = getAudio();
     if (!audio) return;
-    
+
     audio.pause();
     audio.currentTime = 0;
-    
+
     if (currentTimeUpdateListener) {
       audio.removeEventListener("timeupdate", currentTimeUpdateListener);
       currentTimeUpdateListener = null;

@@ -46,11 +46,9 @@ export default function Controls({ onOpenSettings }) {
 
   const { play, stop, setMuted: setAudioMuted } = useAudio();
 
-  // Синхронизируем состояние muted при монтировании компонента
   useEffect(() => {
     setAudioMuted(muted);
     if (!muted) {
-      // Запускаем ambience если звук включен
       play("ambience");
     }
   }, [muted, setAudioMuted, play]);
@@ -66,7 +64,6 @@ export default function Controls({ onOpenSettings }) {
   };
 
   const handleCollect = () => {
-    // Звук теперь воспроизводится в CollectButton
     collectNow();
   };
   
@@ -76,10 +73,8 @@ export default function Controls({ onOpenSettings }) {
     setAudioMuted(newMutedState);
     
     if (!newMutedState) {
-      // Включаем звук - запускаем ambience
       setTimeout(() => play("ambience"), 100);
     } else {
-      // Выключаем звук - останавливаем все
       stop();
     }
   };

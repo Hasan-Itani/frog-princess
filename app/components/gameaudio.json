@@ -6,7 +6,7 @@
     "ambience": {
       "start": 0,
       "end": 38.62503401360544,
-      "loop": true
+      "loop": false
     },
     "ball_crack_high": {
       "start": 40,
@@ -41,7 +41,7 @@
     "basic_background": {
       "start": 53,
       "end": 94.14285714285714,
-      "loop": true
+      "loop": false
     },
     "bell": {
       "start": 96,
@@ -241,7 +241,7 @@
     "rampage_background": {
       "start": 207,
       "end": 238.99709750566893,
-      "loop": true
+      "loop": false
     },
     "win_jackpot": {
       "start": 240,
