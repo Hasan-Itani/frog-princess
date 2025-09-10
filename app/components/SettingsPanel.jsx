@@ -43,7 +43,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
       <div className="absolute inset-0 bg-black/85 pointer-events-none" />
 
       {/* Header */}
-      <div className="relative bg-black/40 backdrop-blur-md text-sky-300 text-lg font-extrabold text-center py-3">
+      <div className="relative bg-black/15 backdrop-blur-md text-sky-300 text-lg font-extrabold text-center py-3">
         {activeTab === "bet" && "BET SETTINGS"}
         {activeTab === "rules" && "RULES & INFO"}
         {activeTab === "settings" && "SETTINGS"}
@@ -63,7 +63,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                 className="w-9 h-9 rounded-full bg-white/80 text-black font-bold grid place-items-center cursor-not-allowed"
                 aria-disabled="true"
               >
-                –
+                -
               </button>
               <ImgLily size={60} className="drop-shadow" />
               <button
@@ -138,9 +138,9 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
       </div>
 
       {/* Bottom Tabs */}
-      <div className="relative flex items-center justify-around bg-black/40 backdrop-blur-md py-6">
+      <div className="relative flex items-center justify-around bg-black/15 backdrop-blur-md py-6">
         <IconButton
-          size={14}
+          size={20}
           icon="/cash_unhover.png"
           hoverIcon="/cash_hover.png"
           activeIcon="/cash_selected.png"
@@ -149,7 +149,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           alt="Cash"
         />
         <IconButton
-          size={14}
+          size={20}
           icon="/info_unhover.png"
           hoverIcon="/info_hover.png"
           activeIcon="/info_selected.png"
@@ -158,7 +158,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           alt="Info"
         />
         <IconButton
-          size={14}
+          size={20}
           icon="/settings_unhover.png"
           hoverIcon="/settings_hover.png"
           activeIcon="/settings_selected.png"
@@ -167,7 +167,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           alt="Settings"
         />
         <IconButton
-          size={14}
+          size={20}
           icon="/close_unhover.png"
           hoverIcon="/close_hover.png"
           activeIcon="/close_hover.png"

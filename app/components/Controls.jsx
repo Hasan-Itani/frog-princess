@@ -27,6 +27,7 @@ export default function Controls({ onOpenSettings }) {
     <div className="relative z-20 pointer-events-auto w-full text-white px-3 py-2 space-y-2">
       <div className="flex items-stretch justify-between">
         <IconButton
+          px={40}
           icon={muted ? "/audio_off_unhover.png" : "/audio_unhover.png"}
           hoverIcon={muted ? "/audio_off_hover.png" : "/audio_hover.png"}
           activeIcon={muted ? "/audio_off_hover.png" : "/audio_hover.png"}
@@ -45,6 +46,7 @@ export default function Controls({ onOpenSettings }) {
         </div>
 
         <IconButton
+          px={40}
           icon="/tabs_unhover.png"
           hoverIcon="/tabs_hover.png"
           activeIcon="/tabs_hover.png"

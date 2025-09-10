@@ -91,7 +91,7 @@ export default function GameBoard() {
               className="relative"
               style={{ paddingLeft: BADGE_GUTTER }}
             >
-              <div className="flex items-center justify-center gap-3 py-1.5">
+              <div className="flex items-center justify-center gap-3">
                 {Array.from({ length: padsPerRow }).map((_, col) => {
                   const isFrogHere =
                     rowIndexGlobal === frogRow && frogCol === col;
@@ -144,7 +144,6 @@ export default function GameBoard() {
                 className="absolute top-1/2 -translate-y-1/2"
                 style={{
                   left: 8,
-                  opacity: rowOpacity,
                   width: BADGE_W,
                   height: BADGE_W,
                 }}
