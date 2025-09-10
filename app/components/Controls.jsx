@@ -4,6 +4,7 @@ import { useGame } from "../hooks/useGame";
 import IconButton from "./ui/IconButton";
 import CollectButton from "./ui/CollectButton";
 import { useDebug } from "../hooks/useDebug"; // ⬅️ added
+import useAudio from "../hooks/useAudio";
 
 // SAME distribution function so the label matches the board
 function dropsForLevel(idx) {
@@ -42,6 +43,32 @@ export default function Controls({ onOpenSettings }) {
   // cap drops to 4 (since there are 5 pads → at least one safe)
   const dropsCount = Math.min(dropsForLevel(level), 4);
 
+  const { play, stop } = useAudio();
+
+  const handleIncrement = () => {
+    play("button");
+    incrementBet();
+  };
+
+  const handleDecrement = () => {
+    play("button");
+    decrementBet();
+  };
+
+  const handleCollect = () => {
+    play("collect");
+    collectNow();
+  };
+  const handleAudioToggle = () => {
+    if (muted) {
+      setMuted(false);
+      play("ambience");
+    } else {
+      setMuted(true);
+      stop();
+    }
+  };
+
   return (
     <div className="relative z-20 pointer-events-auto w-full text-white px-3 py-2 space-y-2">
       <div className="flex items-stretch justify-between">
@@ -51,7 +78,7 @@ export default function Controls({ onOpenSettings }) {
           hoverIcon={muted ? "/audio_off_hover.png" : "/audio_hover.png"}
           activeIcon={muted ? "/audio_off_hover.png" : "/audio_hover.png"}
           isActive={false}
-          onClick={() => setMuted(!muted)}
+          onClick={handleAudioToggle}
           alt="Audio"
         />
 
@@ -66,7 +93,7 @@ export default function Controls({ onOpenSettings }) {
             show={showCollect}
             amount={currentWin}
             format={format}
-            onCollect={collectNow}
+            onCollect={handleCollect}
           />
         </div>
 
@@ -76,7 +103,10 @@ export default function Controls({ onOpenSettings }) {
           hoverIcon="/tabs_hover.png"
           activeIcon="/tabs_hover.png"
           isActive={false}
-          onClick={onOpenSettings}
+          onClick={() => {
+            play("button");
+            onOpenSettings();
+          }}
           alt="Tabs"
         />
       </div>
@@ -89,7 +119,7 @@ export default function Controls({ onOpenSettings }) {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={decrementBet}
+            onClick={handleDecrement}
             className="w-7 h-7 rounded-full bg-white text-black font-bold text-lg leading-none grid place-items-center disabled:opacity-40"
             disabled={isPlaying || !canDecrementBet}
             aria-label="Decrease bet"
@@ -101,7 +131,7 @@ export default function Controls({ onOpenSettings }) {
             <div className="font-bold">{format(bet)}</div>
           </div>
           <button
-            onClick={incrementBet}
+            onClick={handleIncrement}
             className="w-7 h-7 rounded-full bg-white text-black font-bold text-lg leading-none grid place-items-center disabled:opacity-40"
             disabled={isPlaying || !canIncrementBet}
             aria-label="Increase bet"

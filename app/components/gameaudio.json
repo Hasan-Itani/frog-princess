@@ -1,15 +1,12 @@
 {
   "resources": [
-    "./resource/assets/sounds/desktop/gameaudio.ogg",
-    "./resource/assets/sounds/desktop/gameaudio.m4a",
-    "./resource/assets/sounds/desktop/gameaudio.mp3",
-    "./resource/assets/sounds/desktop/gameaudio.ac3"
+    "/sounds/gameaudio.mp3"
   ],
   "spritemap": {
     "ambience": {
       "start": 0,
       "end": 38.62503401360544,
-      "loop": false
+      "loop": true
     },
     "ball_crack_high": {
       "start": 40,
@@ -44,7 +41,7 @@
     "basic_background": {
       "start": 53,
       "end": 94.14285714285714,
-      "loop": false
+      "loop": true
     },
     "bell": {
       "start": 96,
@@ -244,7 +241,7 @@
     "rampage_background": {
       "start": 207,
       "end": 238.99709750566893,
-      "loop": false
+      "loop": true
     },
     "win_jackpot": {
       "start": 240,
