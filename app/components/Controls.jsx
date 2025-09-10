@@ -5,6 +5,7 @@ import IconButton from "./ui/IconButton";
 import CollectButton from "./ui/CollectButton";
 import { useDebug } from "../hooks/useDebug"; // ⬅️ added
 import useAudio from "../hooks/useAudio";
+import { useEffect } from "react";
 
 // SAME distribution function so the label matches the board
 function dropsForLevel(idx) {
@@ -43,7 +44,16 @@ export default function Controls({ onOpenSettings }) {
   // cap drops to 4 (since there are 5 pads → at least one safe)
   const dropsCount = Math.min(dropsForLevel(level), 4);
 
-  const { play, stop } = useAudio();
+  const { play, stop, setMuted: setAudioMuted } = useAudio();
+
+  // Синхронизируем состояние muted при монтировании компонента
+  useEffect(() => {
+    setAudioMuted(muted);
+    if (!muted) {
+      // Запускаем ambience если звук включен
+      play("ambience");
+    }
+  }, [muted, setAudioMuted, play]);
 
   const handleIncrement = () => {
     play("button");
@@ -56,15 +66,20 @@ export default function Controls({ onOpenSettings }) {
   };
 
   const handleCollect = () => {
-    play("collect");
+    // Звук теперь воспроизводится в CollectButton
     collectNow();
   };
+  
   const handleAudioToggle = () => {
-    if (muted) {
-      setMuted(false);
-      play("ambience");
+    const newMutedState = !muted;
+    setMuted(newMutedState);
+    setAudioMuted(newMutedState);
+    
+    if (!newMutedState) {
+      // Включаем звук - запускаем ambience
+      setTimeout(() => play("ambience"), 100);
     } else {
-      setMuted(true);
+      // Выключаем звук - останавливаем все
       stop();
     }
   };
@@ -94,6 +109,7 @@ export default function Controls({ onOpenSettings }) {
             amount={currentWin}
             format={format}
             onCollect={handleCollect}
+            playSound={play}
           />
         </div>
 

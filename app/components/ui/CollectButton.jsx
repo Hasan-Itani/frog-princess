@@ -7,6 +7,7 @@ export default function CollectButton({
   format,
   label = "COLLECT",
   onCollect,
+  playSound,
   className = "",
 }) {
   const [visible, setVisible] = useState(false);
@@ -38,6 +39,11 @@ export default function CollectButton({
     if (locked || phase === "out") return;
     setLocked(true);
     setPhase("out");
+    
+    if (playSound) {
+      playSound("frog_4");
+    }
+    
     onCollect?.();
   }
 

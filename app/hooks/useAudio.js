@@ -2,51 +2,93 @@
 import { useRef, useCallback } from "react";
 import spritemap from "../components/gameaudio.json";
 
+// Глобальные переменные для единого управления аудио
+let globalAudio = null;
+let globalMuted = false;
+let currentTimeUpdateListener = null;
+
+const initGlobalAudio = () => {
+  if (typeof window === "undefined" || globalAudio) return globalAudio;
+  
+  globalAudio = document.createElement("audio");
+  spritemap.resources.forEach((src) => {
+    const source = document.createElement("source");
+    source.src = src;
+    globalAudio.appendChild(source);
+  });
+  
+  return globalAudio;
+};
+
 export default function useAudio() {
   const audioRef = useRef(null);
 
   const getAudio = () => {
-    if (typeof window === "undefined") return null;
     if (!audioRef.current) {
-      const audio = document.createElement("audio");
-      spritemap.resources.forEach((src) => {
-        const source = document.createElement("source");
-        source.src = src;
-        audio.appendChild(source);
-      });
-      audioRef.current = audio;
+      audioRef.current = initGlobalAudio();
     }
     return audioRef.current;
   };
 
-  const play = useCallback((name) => {
+  const setMuted = useCallback((muted) => {
+    globalMuted = muted;
     const audio = getAudio();
-    if (!audio || !spritemap.spritemap[name]) return;
+    if (muted && audio) {
+      audio.pause();
+      if (currentTimeUpdateListener) {
+        audio.removeEventListener("timeupdate", currentTimeUpdateListener);
+        currentTimeUpdateListener = null;
+      }
+    }
+  }, []);
 
-    const { start, end, loop } = spritemap.spritemap[name];
+  const play = useCallback((name) => {
+    if (globalMuted) return;
+
+    const audio = getAudio();
+    const clip = spritemap.spritemap[name];
+    if (!audio || !clip) return;
+
+    const { start, end, loop } = clip;
+
+    // Снимаем предыдущего слушателя
+    if (currentTimeUpdateListener) {
+      audio.removeEventListener("timeupdate", currentTimeUpdateListener);
+      currentTimeUpdateListener = null;
+    }
+
+    // Ставим на начало куска
+    audio.pause();
     audio.currentTime = start;
+    audio.loop = !!loop;
 
-    audio.loop = loop || ["ambience", "basic_background", "rampage_background"].includes(name);
-
-    const onTimeUpdate = () => {
+    // Если кусок НЕ зацикленный → вручную останавливаем по окончании
+    currentTimeUpdateListener = () => {
       if (audio.currentTime >= end && !audio.loop) {
         audio.pause();
-        audio.removeEventListener("timeupdate", onTimeUpdate);
+        audio.removeEventListener("timeupdate", currentTimeUpdateListener);
+        currentTimeUpdateListener = null;
       }
     };
 
-    audio.removeEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-
-    audio.play().catch((err) => console.error("Audio play error:", err));
+    audio.addEventListener("timeupdate", currentTimeUpdateListener);
+    audio.play().catch(err => {
+      console.error("Audio play error:", err);
+    });
   }, []);
 
   const stop = useCallback(() => {
     const audio = getAudio();
     if (!audio) return;
+    
     audio.pause();
     audio.currentTime = 0;
+    
+    if (currentTimeUpdateListener) {
+      audio.removeEventListener("timeupdate", currentTimeUpdateListener);
+      currentTimeUpdateListener = null;
+    }
   }, []);
 
-  return { play, stop };
+  return { play, stop, setMuted };
 }
