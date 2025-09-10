@@ -6,6 +6,7 @@ import SettingsPanel from "./components/SettingsPanel";
 import { GameProvider } from "./hooks/useGame";
 import { DebugProvider } from "./hooks/useDebug"; // ⬅️ added
 import useAudio from "./hooks/useAudio";
+import SakuraFall from "./components/ui/SakuraFall";
 
 function OverlayStart({ children }) {
   const [started, setStarted] = useState(false);
@@ -45,6 +46,7 @@ export default function Home() {
       <div className="relative w-[400px] h-[100vh] bg-[url('/game-img.jpg')] bg-cover bg-center shadow-xl flex flex-col overflow-hidden">
         <DebugProvider>
           {/* ⬅️ added provider */}
+          <SakuraFall />
           <GameProvider>
             <OverlayStart>
               {/* Game area */}
