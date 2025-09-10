@@ -15,7 +15,7 @@ export const MULTIPLIERS = [
 const BET_STEPS = [0.3, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20];
 
 const GameContext = createContext(null);
-
+const LOSS_REVEAL_MS = 900;
 export function GameProvider({ children }) {
   const [balance, setBalance] = useState(100);
   const [betIndex, setBetIndex] = useState(2);
@@ -52,11 +52,6 @@ export function GameProvider({ children }) {
     if (!isPlaying || finishing) return;
     finishRun("collect", currentWin);
   }
-  function dropNow() {
-    if (!isPlaying || finishing) return;
-    finishRun("drop", 0);
-  }
-
   function startRun() {
     if (isPlaying) return true;
     if (balance < bet) {
@@ -70,8 +65,8 @@ export function GameProvider({ children }) {
     return true;
   }
 
-  function advanceOneLevel() {
-    if (!isPlaying) return;
+  function advanceOneLevel(forceNow = false) {
+    if (!isPlaying && !forceNow) return;
     if (level >= levelsCount) return;
 
     const multiplierThisLevel = MULTIPLIERS[level];
@@ -91,18 +86,34 @@ export function GameProvider({ children }) {
     finishRun("collect", currentWin);
   }
 
-  function dropNow() {
-    if (!isPlaying) return;
-    finishRun("drop", 0);
+  function dropNow(forceNow = false) {
+    if (finishing) return;
+    finishRun("drop", 0, forceNow);
   }
 
-  function finishRun(reason, amount) {
-    if (finishing || !isPlaying) return;
+  function finishRun(reason, amount, forceNow = false) {
+    if (finishing || (!isPlaying && !forceNow)) return;
     setFinishing(true);
     setFinishReason(reason);
     if (amount > 0) setBalance((b) => +(b + amount).toFixed(2));
     setOverlayAmount(amount);
-    setTimeout(() => setShowWinOverlay(true), 220);
+
+    if (amount > 0) {
+      // WIN: show overlay as before
+      setTimeout(() => setShowWinOverlay(true), 220);
+    } else {
+      // LOSS: no overlay — reveal is handled by the board; then auto-reset
+      setTimeout(() => {
+        // reset round back to initial state
+        setShowWinOverlay(false);
+        setOverlayAmount(0);
+        setFinishing(false);
+        setFinishReason(null);
+        setCurrentWin(0);
+        setLevel(0);
+        setIsPlaying(false);
+      }, LOSS_REVEAL_MS);
+    }
   }
 
   useEffect(() => {

@@ -1,7 +1,18 @@
 "use client";
+// ⬇️ adjust this path if your useGame is elsewhere (e.g. "../useGame")
 import { useGame } from "../hooks/useGame";
 import IconButton from "./ui/IconButton";
 import CollectButton from "./ui/CollectButton";
+import { useDebug } from "../hooks/useDebug"; // ⬅️ added
+
+// SAME distribution function so the label matches the board
+function dropsForLevel(idx) {
+  const n = idx + 1;
+  if (n >= 1 && n <= 5) return 1;
+  if (n >= 6 && n <= 9) return 2;
+  if (n >= 10 && n <= 12) return 3;
+  return 4; // 13-14
+}
 
 export default function Controls({ onOpenSettings }) {
   const {
@@ -19,9 +30,17 @@ export default function Controls({ onOpenSettings }) {
     canIncrementBet,
     canDecrementBet,
     showWinOverlay,
+    levelsCount,
   } = useGame();
 
+  const { showDrops, toggleDrops } = useDebug(); // ⬅️ added
+
   const showCollect = isPlaying && level > 0 && !showWinOverlay;
+
+  // human-readable next level (cap at max)
+  const displayLevel = Math.min(level + 1, levelsCount);
+  // cap drops to 4 (since there are 5 pads → at least one safe)
+  const dropsCount = Math.min(dropsForLevel(level), 4);
 
   return (
     <div className="relative z-20 pointer-events-auto w-full text-white px-3 py-2 space-y-2">
@@ -36,7 +55,13 @@ export default function Controls({ onOpenSettings }) {
           alt="Audio"
         />
 
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          {/* The label you asked for */}
+          <div className="text-[10px] leading-3 opacity-80 mb-1 text-center">
+            AVOID {dropsCount} DROP{dropsCount !== 1 ? "S" : ""} ON LEVEL{" "}
+            {displayLevel}
+          </div>
+
           <CollectButton
             show={showCollect}
             amount={currentWin}
@@ -95,6 +120,17 @@ export default function Controls({ onOpenSettings }) {
             <div className="text-green-400 font-bold">GOOD LUCK!</div>
           )}
         </div>
+      </div>
+
+      {/* 🔧 tiny dev toggle (added, everything else unchanged) */}
+      <div className="pt-1">
+        <button
+          onClick={toggleDrops}
+          className="px-2 py-1 text-[10px] bg-red-600 text-white rounded shadow"
+          title="Debug: show/hide all drops"
+        >
+          {showDrops ? "Unmark Drops" : "Mark Drops"}
+        </button>
       </div>
     </div>
   );
