@@ -6,15 +6,7 @@ import CollectButton from "./ui/CollectButton";
 import { useDebug } from "../hooks/useDebug"; // ⬅️ added
 import useAudio from "../hooks/useAudio";
 import { useEffect } from "react";
-
-// SAME distribution function so the label matches the board
-function dropsForLevel(idx) {
-  const n = idx + 1;
-  if (n >= 1 && n <= 5) return 1;
-  if (n >= 6 && n <= 9) return 2;
-  if (n >= 10 && n <= 12) return 3;
-  return 4; // 13-14
-}
+import { dropsForLevel } from "../hooks/useDrops";
 
 export default function Controls({ onOpenSettings }) {
   const {
@@ -46,12 +38,12 @@ export default function Controls({ onOpenSettings }) {
 
   const { play, stop, setMuted: setAudioMuted } = useAudio();
 
-  useEffect(() => {
-    setAudioMuted(muted);
-    if (!muted) {
-      play("basic_background");
-    }
-  }, [muted, setAudioMuted, play]);
+  // useEffect(() => {
+  //   setAudioMuted(muted);
+  //   if (!muted) {
+  //     play("basic_background");
+  //   }
+  // }, [muted, setAudioMuted, play]);
 
   const handleIncrement = () => {
     play("button");
@@ -66,12 +58,12 @@ export default function Controls({ onOpenSettings }) {
   const handleCollect = () => {
     collectNow();
   };
-  
+
   const handleAudioToggle = () => {
     const newMutedState = !muted;
     setMuted(newMutedState);
     setAudioMuted(newMutedState);
-    
+
     if (!newMutedState) {
       setTimeout(() => play("basic_background"), 100);
     } else {
