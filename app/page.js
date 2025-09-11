@@ -4,8 +4,8 @@ import GameBoard from "./components/GameBoard";
 import Controls from "./components/Controls";
 import SettingsPanel from "./components/SettingsPanel";
 import { GameProvider } from "./hooks/useGame";
-import { DebugProvider } from "./hooks/useDebug"; // ⬅️ added
-import SakuraFall from "./components/ui/SakuraFall";
+import { DebugProvider } from "./hooks/useDebug"; 
+import SakuraFall from "./components/animations/SakuraFall";
 
 function OverlayStart({ children }) {
   const [started, setStarted] = useState(false);
