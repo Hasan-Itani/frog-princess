@@ -39,9 +39,9 @@
       "loop": false
     },
     "basic_background": {
-      "start": 53,
+      "start": 54.8,
       "end": 94.14285714285714,
-      "loop": false
+      "loop": true
     },
     "bell": {
       "start": 96,

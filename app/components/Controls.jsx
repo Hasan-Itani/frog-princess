@@ -49,7 +49,7 @@ export default function Controls({ onOpenSettings }) {
   useEffect(() => {
     setAudioMuted(muted);
     if (!muted) {
-      play("ambience");
+      play("basic_background");
     }
   }, [muted, setAudioMuted, play]);
 
@@ -73,7 +73,7 @@ export default function Controls({ onOpenSettings }) {
     setAudioMuted(newMutedState);
     
     if (!newMutedState) {
-      setTimeout(() => play("ambience"), 100);
+      setTimeout(() => play("basic_background"), 100);
     } else {
       stop();
     }
