@@ -101,7 +101,7 @@ body {
 
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(56, 189, 248, 0.7) transparent; 
+  scrollbar-color: rgba(56, 189, 248, 0.7) transparent;
 }
 
 .custom-scroll::-webkit-scrollbar {
@@ -109,15 +109,32 @@ body {
 }
 
 .custom-scroll::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, 0.35); 
+  background: rgba(2, 6, 23, 0.35);
   border-radius: 9999px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.7); 
+  background: rgba(56, 189, 248, 0.7);
   border-radius: 9999px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.9);
+}
+/* Subtle scale pulse for the start overlay */
+@keyframes subtle-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  } 
+}
+
+.pulse-soft {
+  animation: subtle-breathe 2s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
 }

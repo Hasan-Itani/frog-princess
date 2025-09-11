@@ -17,15 +17,26 @@ function OverlayStart({ children }) {
   if (!started) {
     return (
       <div
-        className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center text-white cursor-pointer"
+        className="absolute inset-0 z-50 flex items-center justify-center text-white cursor-pointer"
         onClick={handleStart}
       >
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">TRY YOUR LUCK!</h1>
-          <p className="text-sm opacity-70">LEAD THE FROG TO THE END</p>
-          <p className="text-sm opacity-70">AND WIN X1500</p>
-          <p className="text-sm opacity-70">AVOID DROPS</p>
-          <p className="text-sm mt-40 opacity-70">PRESS TO START</p>
+        <div className="text-center select-none pulse-soft">
+          <div className="text-2xl font-extrabold text-green-400">
+            TRY YOUR LUCK!
+          </div>
+          <br />
+          <div className="mt-1 text-2xl font-extrabold text-green-400">
+            LEAD THE FROG TO THE END
+          </div>
+          <div className="mt-1 text-2xl font-extrabold text-green-400">
+            AND WIN <span className="text-3xl text-yellow-200">x1500</span>
+          </div>
+          <div className="mt-1 text-2xl font-extrabold text-green-400">
+            AVOID DROPS!
+          </div>
+          <div className="mt-16 text-2xl font-extrabold text-green-400 uppercase">
+            PRESS TO START
+          </div>
         </div>
       </div>
     );
