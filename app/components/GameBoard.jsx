@@ -26,6 +26,26 @@ function opacityForRow(rowIndex, level) {
   return 0.2;
 }
 
+// Deterministic, per-pad floating params so things don't "jump" each render
+// Deterministic, per-pad floating params — **calmer** version
+function floatParams(rowIndex, col = 0) {
+  // simple LCG seeded by row/col
+  let x = (((rowIndex + 1) * 73856093) ^ ((col + 1) * 19349663)) >>> 0;
+  const rnd = () => {
+    x = (1664525 * x + 1013904223) >>> 0;
+    return x / 0xffffffff;
+  };
+
+  // much smaller movement & a bit slower
+  const bob = 1 + rnd() * 1.5; // 1.0 .. 2.5 px (was 3..6)
+  const tilt = 0.15 + rnd() * 0.35; // 0.15 .. 0.50 deg (was 0.6..2.0)
+  const drift = 0.4 + rnd() * 0.8; // 0.4 .. 1.2 px (was 2..5)
+  const dur = 4.2 + rnd() * 2.2; // 4.2 .. 6.4 s (slower)
+  const delay = rnd() * 0.8; // 0 .. 0.8 s
+
+  return { bob, tilt, drift, dur, delay };
+}
+
 // distribution: 1,1,1,1,1, 2,2,2,2, 3,3,3, 4,4 (levels 1..14)
 function dropsForLevel(idx) {
   const n = idx + 1;
@@ -63,7 +83,7 @@ export default function GameBoard() {
   const {
     isPlaying,
     startRun,
-    advanceOneLevel, // (we already added force in your hook earlier)
+    advanceOneLevel,
     dropNow,
     showWinOverlay,
     overlayAmount,
@@ -134,19 +154,19 @@ export default function GameBoard() {
 
     const traps = trapsForRow(rowIndexGlobal, PADS_PER_ROW, seed);
     const clickedIsTrap = traps.has(col);
-    
+
     if (clickedIsTrap) {
       const full = {};
       for (let i = 0; i < levelsCount; i++) full[i] = true;
       setRevealAll(true); // visuals
       setRevealedMap(full); // visuals
-      dropNow(true); // ⬅️ force finish on first-click drop
+      dropNow(true); // force finish on first-click drop
       return;
     }
 
     // safe: reveal only this row's traps and advance
     setRevealedMap((m) => ({ ...m, [rowIndexGlobal]: true }));
-    advanceOneLevel(starting); // pass true on very first safe click if you kept the 'force' param
+    advanceOneLevel(starting);
   }
 
   return (
@@ -157,9 +177,6 @@ export default function GameBoard() {
           const mult = MULTIPLIERS[rowIndexGlobal];
 
           // allow clicks if:
-          // - it’s the current level row
-          // - AND either the run is active OR we’re at pre-start (level 0)
-          // - AND we’re not in a dropped state (revealAll) nor overlay
           const canStartNewRun =
             !isPlaying && level === 0 && !revealAll && !showWinOverlay;
           const isClickable =
@@ -189,8 +206,7 @@ export default function GameBoard() {
                   const isTrapAndRevealed =
                     shouldRevealThisRow && traps.has(col);
 
-                  // When revealed, traps "disappear":
-                  // if debug ON, we keep the pad visible with a marker but still disable click.
+                  // When revealed, traps "disappear"
                   if (isTrapAndRevealed && !showDrops) {
                     return (
                       <div
@@ -203,6 +219,12 @@ export default function GameBoard() {
                       />
                     );
                   }
+
+                  // Floating params per lily
+                  const { bob, tilt, drift, dur, delay } = floatParams(
+                    rowIndexGlobal,
+                    col
+                  );
 
                   return (
                     <button
@@ -224,54 +246,87 @@ export default function GameBoard() {
                       }}
                       title={isClickable ? "Jump" : ""}
                     >
-                      <Image
-                        src="/lilly.png"
-                        alt="Lily"
-                        width={LILY_IMG}
-                        height={LILY_IMG}
-                        className="pointer-events-none"
-                        style={{ transform: `rotate(${rots[col]}deg)` }}
-                      />
-
-                      {/* DEV overlay: mark/unmark traps */}
-                      {showDrops && traps.has(col) && (
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                          <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                        </div>
-                      )}
-
-                      {/* Frog */}
-                      {isFrogHere && (
+                      {/* Float the visuals only; keep button hitbox stable */}
+                      <div
+                        className="water-bob pointer-events-none relative"
+                        style={{
+                          ["--dur"]: `${dur}s`,
+                          ["--delay"]: `${delay}s`,
+                          ["--bob"]: `${bob}px`,
+                          ["--drift"]: `${drift}px`,
+                          ["--tiltPos"]: `${tilt}deg`,
+                          ["--tiltNeg"]: `${-tilt}deg`,
+                        }}
+                      >
                         <Image
-                          src="/frog.png"
-                          alt="Frog"
-                          width={Math.round(LILY_BTN * 0.5)}
-                          height={Math.round(LILY_BTN * 0.5)}
-                          className="absolute pointer-events-none"
+                          src="/lilly.png"
+                          alt="Lily"
+                          width={LILY_IMG}
+                          height={LILY_IMG}
+                          className="pointer-events-none"
+                          style={{ transform: `rotate(${rots[col]}deg)` }}
                         />
-                      )}
+
+                        {/* DEV overlay: trap marker floats with the lily too */}
+                        {showDrops && traps.has(col) && (
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                          </div>
+                        )}
+
+                        {/* Frog rides the lily */}
+                        {isFrogHere && (
+                          <Image
+                            src="/frog.png"
+                            alt="Frog"
+                            width={Math.round(LILY_BTN * 0.5)}
+                            height={Math.round(LILY_BTN * 0.5)}
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                          />
+                        )}
+                      </div>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Multiplier flower (always visible; never inherits row opacity) */}
+              {/* Multiplier flower (floats too, with slightly smaller bob) */}
               <div
                 className="absolute top-1/2 -translate-y-1/2"
                 style={{ left: 8, width: BADGE_W, height: BADGE_W }}
               >
-                <div className="relative w-full h-full">
-                  <Image
-                    src="/flower.png"
-                    alt="Multiplier"
-                    width={BADGE_W}
-                    height={BADGE_W}
-                    className="pointer-events-none"
-                  />
-                </div>
-                <div className="absolute inset-0 grid place-items-center text-[11px] font-extrabold text-black">
-                  x{MULTIPLIERS[rowIndexGlobal]}
-                </div>
+                {(() => {
+                  const { bob, tilt, drift, dur, delay } = floatParams(
+                    rowIndexGlobal,
+                    -1
+                  );
+                  return (
+                    <div
+                      className="water-bob relative pointer-events-none"
+                      style={{
+                        ["--dur"]: `${dur}s`,
+                        ["--delay"]: `${delay}s`,
+                        ["--bob"]: `${bob * 0.6}px`,
+                        ["--drift"]: `${drift}px`,
+                        ["--tiltPos"]: `${tilt}deg`,
+                        ["--tiltNeg"]: `${-tilt}deg`,
+                      }}
+                    >
+                      <div className="relative w-full h-full">
+                        <Image
+                          src="/flower.png"
+                          alt="Multiplier"
+                          width={BADGE_W}
+                          height={BADGE_W}
+                          className="pointer-events-none"
+                        />
+                      </div>
+                      <div className="absolute inset-0 grid place-items-center text-[11px] font-extrabold text-black">
+                        x{MULTIPLIERS[rowIndexGlobal]}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );

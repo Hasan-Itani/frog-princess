@@ -129,11 +129,44 @@ body {
   }
   50% {
     transform: scale(1.03);
-  } 
+  }
 }
 
 .pulse-soft {
   animation: subtle-breathe 3s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Water bob animation (parametrized with CSS vars) */
+/* Water bobbing animation for floating on the sea */
+@keyframes water-bob {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(var(--tiltPos, 0deg));
+  }
+  25% {
+    transform: translate3d(
+        calc(var(--drift, 0px) * -1),
+        calc(var(--bob, 4px) * 0.5),
+        0
+      )
+      rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, var(--bob, 4px), 0) rotate(var(--tiltNeg, 0deg));
+  }
+  75% {
+    transform: translate3d(var(--drift, 0px), calc(var(--bob, 4px) * 0.5), 0)
+      rotate(0deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--tiltPos, 0deg));
+  }
+}
+
+.water-bob {
+  animation: water-bob var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
   transform-origin: center;
   will-change: transform;
   backface-visibility: hidden;
