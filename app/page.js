@@ -25,16 +25,16 @@ function OverlayStart({ children }) {
             TRY YOUR LUCK!
           </div>
           <br />
-          <div className="mt-1 text-2xl font-extrabold text-green-400">
+          <div className=" text-2xl font-extrabold text-green-400">
             LEAD THE FROG TO THE END
           </div>
-          <div className="mt-1 text-2xl font-extrabold text-green-400">
+          <div className=" text-2xl font-extrabold text-green-400">
             AND WIN <span className="text-3xl text-yellow-200">x1500</span>
           </div>
-          <div className="mt-1 text-2xl font-extrabold text-green-400">
+          <div className=" text-2xl font-extrabold text-green-400">
             AVOID DROPS!
           </div>
-          <div className="mt-16 text-2xl font-extrabold text-green-400 uppercase">
+          <div className="mt-16 text-2xl font-extrabold uppercase">
             PRESS TO START
           </div>
         </div>

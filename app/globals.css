@@ -133,7 +133,7 @@ body {
 }
 
 .pulse-soft {
-  animation: subtle-breathe 2s ease-in-out infinite;
+  animation: subtle-breathe 3s ease-in-out infinite;
   transform-origin: center;
   will-change: transform;
   backface-visibility: hidden;
