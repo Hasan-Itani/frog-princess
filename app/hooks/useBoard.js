@@ -4,8 +4,9 @@ import { useGame } from "./useGame";
 
 const PADS_PER_ROW = 5;
 const WINDOW_SIZE = 5;
+const DEFAULT_ROCK_FACING = -120;
 
-/* --- visuals weight per row (same behavior) --- */
+/* -------- visuals weight per row (based on current level) -------- */
 function opacityForRow(rowIndex, level) {
   if (rowIndex === level) return 1;
   if (rowIndex === level - 1) return 0.5;
@@ -17,7 +18,7 @@ function opacityForRow(rowIndex, level) {
   return 0.2;
 }
 
-/* --- deterministic float params (calmer) --- */
+/* -------- calm float params -------- */
 function floatParams(rowIndex, col = 0) {
   let x = (((rowIndex + 1) * 73856093) ^ ((col + 1) * 19349663)) >>> 0;
   const rnd = () => {
@@ -32,7 +33,7 @@ function floatParams(rowIndex, col = 0) {
   return { bob, tilt, drift, dur, delay };
 }
 
-/* --- deterministic cosmetic rotations --- */
+/* -------- cosmetic rotations -------- */
 function rotationsForRow(rowIndex) {
   const out = [];
   let x = ((rowIndex + 7) * 1103515245 + 12345) % 2147483647;
@@ -43,7 +44,7 @@ function rotationsForRow(rowIndex) {
   return out;
 }
 
-/* --- how many drops per level (1..14) --- */
+/* -------- drop distribution 1..14 → 1,1,1,1,1, 2,2,2,2, 3,3,3, 4,4 -------- */
 function dropsForLevel(idx) {
   const n = idx + 1;
   if (n >= 1 && n <= 5) return 1;
@@ -52,7 +53,7 @@ function dropsForLevel(idx) {
   return 4; // 13-14
 }
 
-/* --- trap indices per row, based on a run seed --- */
+/* -------- traps by seed -------- */
 function trapsForRow(levelIdx, padsPerRow, runSeed) {
   const want = Math.min(dropsForLevel(levelIdx), padsPerRow - 1);
   const traps = new Set();
@@ -71,29 +72,56 @@ export default function useBoard() {
     startRun,
     advanceOneLevel,
     dropNow,
-    level,
-    levelsCount,
     showWinOverlay,
     overlayAmount,
+    level,
+    levelsCount,
   } = useGame();
 
-  // frog visual state
+  // frog visuals
   const [frogRow, setFrogRow] = useState(-1);
   const [frogCol, setFrogCol] = useState(2);
+  const [frogPhase, setFrogPhase] = useState("idle"); // "idle" | "jump" | "curl"
+  const [frogFacingDeg, setFrogFacingDeg] = useState(DEFAULT_ROCK_FACING);
 
   // run-scoped randomness + reveal state
   const [runSeed, setRunSeed] = useState(null);
-  const [revealedMap, setRevealedMap] = useState({}); // {rowIdx: true}
+  const [revealedMap, setRevealedMap] = useState({});
   const [revealAll, setRevealAll] = useState(false);
 
-  // reset local state only when round truly resets
+  // freeze interactions during hop
+  const [isJumping, setIsJumping] = useState(false);
+
+  // ===== Page base in steps of 5 (0,5,10,...) =====
+  const [windowBase, setWindowBase] = useState(0);
+
+  // simple angle from current col → target col (we always move "up" one row)
+  function angleToCol(fromCol, toCol) {
+    const dx = toCol - fromCol; // left(-) / right(+)
+    const dy = -1;              // up one row in screen coords
+    return (Math.atan2(dy, dx) * 180) / Math.PI; // CSS rotate degrees
+  }
+
+  // When not jumping, update base only when we step into the next 5-pack
+  useEffect(() => {
+    if (isJumping) return;
+    const base = Math.floor(level / WINDOW_SIZE) * WINDOW_SIZE;
+    const maxBase = Math.max(0, Math.min(levelsCount - 1, base));
+    if (maxBase !== windowBase) setWindowBase(maxBase);
+  }, [level, levelsCount, isJumping, windowBase]);
+
+  // True reset
   useEffect(() => {
     if (!isPlaying && level === 0) {
       setFrogRow(-1);
       setFrogCol(2);
+      setFrogPhase("idle");
       setRevealedMap({});
       setRevealAll(false);
       setRunSeed(null);
+      setIsJumping(false);
+      setWindowBase(0);
+      setFrogFacingDeg(DEFAULT_ROCK_FACING);
     }
   }, [isPlaying, level]);
 
@@ -104,25 +132,29 @@ export default function useBoard() {
     return seedNow;
   }, [runSeed]);
 
-  // which rows are on screen (windowed)
+  // ===== Visible indices for the current page (last page can be < 5) =====
   const visibleIndices = useMemo(() => {
-    const maxBottom = Math.max(0, levelsCount - WINDOW_SIZE);
-    const bottom = Math.min(Math.max(level - 1, 0), maxBottom);
-    const top = Math.min(bottom + WINDOW_SIZE - 1, levelsCount - 1);
+    const remaining = Math.max(0, levelsCount - windowBase);
+    const pageSize = Math.min(WINDOW_SIZE, remaining);
+    const top = windowBase + pageSize - 1; // inclusive
     const out = [];
-    for (let idx = top; idx >= bottom; idx--) out.push(idx);
+    for (let idx = top; idx >= windowBase; idx--) out.push(idx); // top → bottom
     return out;
-  }, [level, levelsCount]);
+  }, [windowBase, levelsCount]);
 
-  // computed helpers the component can use
+  // convenience: page meta
+  const pageSize = visibleIndices.length;
+  const isFinalPage = pageSize < WINDOW_SIZE;
+
   const getTraps = useCallback(
     (rowIdx) => {
-      const seed = runSeed ?? 123456789; // deterministic preview before start
+      const seed = runSeed ?? 123456789; // deterministic preview pre-start
       return trapsForRow(rowIdx, PADS_PER_ROW, seed);
     },
     [runSeed]
   );
 
+  // Opacity uses the actual current level
   const rowOpacity = useCallback(
     (rowIdx) => opacityForRow(rowIdx, level),
     [level]
@@ -141,28 +173,35 @@ export default function useBoard() {
         rowIdx === level &&
         (isPlaying || canStartNewRun) &&
         !revealAll &&
-        !showWinOverlay
+        !showWinOverlay &&
+        !isJumping
       );
     },
-    [isPlaying, level, revealAll, showWinOverlay]
+    [isPlaying, level, revealAll, showWinOverlay, isJumping]
   );
 
   const onPadClick = useCallback(
     (rowIdx, col) => {
-      if (revealAll || showWinOverlay) return;
+      if (revealAll || showWinOverlay || isJumping) return;
       if (rowIdx !== level) return;
 
       const starting = !isPlaying;
       if (starting) {
-        const ok = startRun(); // deduct bet, set isPlaying
+        const ok = startRun();
         if (!ok) return;
       }
 
       const seed = runSeed ?? ensureRunSeed();
 
-      // move frog immediately
+      // facing: if previous perch is on an older page, aim from rock (col=2)
+      const fromCol = (frogRow < 0 || frogRow < windowBase) ? 2 : frogCol;
+      setFrogFacingDeg(angleToCol(fromCol, col));
+
+      // hop (visual state)
       setFrogRow(rowIdx);
       setFrogCol(col);
+      setFrogPhase("jump");
+      setIsJumping(true);
 
       const traps = trapsForRow(rowIdx, PADS_PER_ROW, seed);
       const clickedIsTrap = traps.has(col);
@@ -173,14 +212,26 @@ export default function useBoard() {
         setRevealAll(true);
         setRevealedMap(full);
         dropNow(true);
+        setTimeout(() => {
+          setFrogPhase("curl");
+          setIsJumping(false);
+        }, 220);
         return;
       }
 
-      // safe: reveal only this row and advance
+      // safe
       setRevealedMap((m) => ({ ...m, [rowIdx]: true }));
-      advanceOneLevel(starting);
+      const HOP_MS = 360; // sync with FrogSprite jump
+      setTimeout(() => {
+        advanceOneLevel(starting);
+        setTimeout(() => {
+          setFrogPhase("idle");
+          setIsJumping(false);
+        }, 40);
+      }, HOP_MS);
     },
     [
+      isJumping,
       revealAll,
       showWinOverlay,
       level,
@@ -191,6 +242,9 @@ export default function useBoard() {
       levelsCount,
       dropNow,
       advanceOneLevel,
+      frogRow,
+      frogCol,
+      windowBase,
     ]
   );
 
@@ -198,9 +252,14 @@ export default function useBoard() {
     // state
     frogRow,
     frogCol,
-    visibleIndices,
+    frogPhase,
+    visibleIndices, // last page can be < 5
+    pageSize,
+    isFinalPage,
     showWinOverlay,
     overlayAmount,
+    isJumping,
+    frogFacingDeg,
 
     // per-row helpers
     getTraps,
@@ -211,11 +270,11 @@ export default function useBoard() {
     // actions
     onPadClick,
 
-    // visuals helpers for caller
+    // visuals helpers
     rotationsForRow,
     floatParams,
 
-    // constants (exported in case you want them)
+    // constants
     constants: { PADS_PER_ROW, WINDOW_SIZE },
   };
 }

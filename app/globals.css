@@ -171,3 +171,50 @@ body {
   will-change: transform;
   backface-visibility: hidden;
 }
+
+/* Frog hop for the "jump" phase */
+@keyframes frog-hop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  55% {
+    transform: translate3d(0, -16px, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+.frog-hop {
+  animation: frog-hop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* If you don't already have this, an example of water-bob using CSS vars:
+   .water-bob reads --dur, --delay, --bob, --drift, --tiltPos, --tiltNeg */
+@keyframes wb-bob {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(var(--drift)) translateY(calc(-1 * var(--bob)))
+      rotate(var(--tiltPos));
+  }
+  50% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateX(calc(-1 * var(--drift))) translateY(var(--bob))
+      rotate(var(--tiltNeg));
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+}
+.water-bob {
+  animation: wb-bob var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
+  will-change: transform;
+}
+/* Freeze the lily under the frog (and during a jump) so landing is crisp */
+.no-bob {
+  animation: none !important;
+  transform: none !important;
+}
