@@ -16,6 +16,7 @@ const BET_STEPS = [0.3, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20];
 
 const GameContext = createContext(null);
 const LOSS_REVEAL_MS = 900;
+
 export function GameProvider({ children }) {
   const [balance, setBalance] = useState(100);
   const [betIndex, setBetIndex] = useState(2);
@@ -48,10 +49,7 @@ export function GameProvider({ children }) {
     setCurrentWin(0);
     setFinishReason(null);
   }
-  function collectNow() {
-    if (!isPlaying || finishing) return;
-    finishRun("collect", currentWin);
-  }
+
   function startRun() {
     if (isPlaying) return true;
     if (balance < bet) {
@@ -82,7 +80,7 @@ export function GameProvider({ children }) {
   }
 
   function collectNow() {
-    if (!isPlaying) return;
+    if (!isPlaying || finishing) return;
     finishRun("collect", currentWin);
   }
 
@@ -104,7 +102,6 @@ export function GameProvider({ children }) {
     } else {
       // LOSS: no overlay — reveal is handled by the board; then auto-reset
       setTimeout(() => {
-        // reset round back to initial state
         setShowWinOverlay(false);
         setOverlayAmount(0);
         setFinishing(false);
