@@ -4,7 +4,7 @@ import GameBoard from "./components/GameBoard";
 import Controls from "./components/Controls";
 import SettingsPanel from "./components/SettingsPanel";
 import { GameProvider } from "./hooks/useGame";
-import { DebugProvider } from "./hooks/useDebug"; 
+import { DebugProvider } from "./hooks/useDebug";
 import SakuraFall from "./components/animations/SakuraFall";
 import Water from "./components/animations/Water";
 import Swipe from "./components/animations/Swipe";
