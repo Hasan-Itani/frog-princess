@@ -56,10 +56,8 @@ export default function Swipe({ active, routes = [], getTileCenter, onDone }) {
 
   return (
     <>
-      {/* затемнение на весь экран */}
       <div className="absolute bottom-[-200px] inset-0 bg-black/70 z-[20] pointer-events-none" />
 
-      {/* подсветка тайлов маршрута */}
       {route.map((tile, idx) => {
         const center = getTileCenter(tile.row, tile.col);
         if (!center) return null;
@@ -80,7 +78,6 @@ export default function Swipe({ active, routes = [], getTileCenter, onDone }) {
         );
       })}
 
-      {/* курсор */}
       {currentCenter && (
         <motion.img
           src="/cursor.png"

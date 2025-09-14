@@ -7,11 +7,14 @@ import { PartTitle, TinyMuted } from "./ui/SectionText";
 import ImgLily from "./ui/ImgLily";
 import RulesContent from "./RulesContent";
 import useBetQuickPick from "../hooks/useBetQuickPick";
+import { play, setVolume } from "../hooks/audioManager";
+
 
 export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
   const [phase, setPhase] = useState("enter"); 
 
   const { BET_STEPS = [], betIndex, isPlaying, format } = useGame();
+  
   const { setBetTarget } = useBetQuickPick();
 
   useEffect(() => {
@@ -22,6 +25,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
   function handleClose() {
     setPhase("exit");
     setTimeout(onClose, 450);
+    play("button");
   }
 
   return (
@@ -132,8 +136,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                 className="w-full accent-orange-500 cursor-pointer"
                 onInput={(e) => {
                   const volume = e.target.value / 100;
-                  // TODO: подключить сюда GameContext / Howler
-                  console.log("Volume:", volume);
+                  setVolume(volume);
                 }}
               />
             </div>
@@ -173,7 +176,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/cash_hover.png"
           activeIcon="/cash_selected.png"
           isActive={activeTab === "bet"}
-          onClick={() => setActiveTab("bet")}
+          onClick={() => {
+            play("button");
+            setActiveTab("bet")
+          }}
           alt="Cash"
         />
         <IconButton
@@ -182,7 +188,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/info_hover.png"
           activeIcon="/info_selected.png"
           isActive={activeTab === "rules"}
-          onClick={() => setActiveTab("rules")}
+          onClick={() => {
+            setActiveTab("rules");
+            play("button");
+          }}
           alt="Info"
         />
         <IconButton
@@ -191,7 +200,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/settings_hover.png"
           activeIcon="/settings_selected.png"
           isActive={activeTab === "settings"}
-          onClick={() => setActiveTab("settings")}
+          onClick={() => {
+            play("button");
+            setActiveTab("settings")
+          }}
           alt="Settings"
         />
         <IconButton

@@ -5,7 +5,6 @@ import IconButton from "./ui/IconButton";
 import CollectButton from "./ui/CollectButton";
 import { useDebug } from "../hooks/useDebug";
 import useAudio from "../hooks/useAudio";
-import { useEffect } from "react";
 import { dropsForLevel } from "../hooks/useDrops";
 
 export default function Controls({ onOpenSettings }) {
@@ -28,20 +27,11 @@ export default function Controls({ onOpenSettings }) {
   } = useGame();
 
   const { showDrops, toggleDrops } = useDebug();
+  const { play, setMuted: setAudioMuted } = useAudio();
 
   const showCollect = isPlaying && level > 0 && !showWinOverlay;
-
   const displayLevel = Math.min(level + 1, levelsCount);
   const dropsCount = Math.min(dropsForLevel(level), 4);
-
-  const { play, stop, setMuted: setAudioMuted } = useAudio();
-
-  // useEffect(() => {
-  //   setAudioMuted(muted);
-  //   if (!muted) {
-  //     play("basic_background");
-  //   }
-  // }, [muted, setAudioMuted, play]);
 
   const handleIncrement = () => {
     play("button");
@@ -55,18 +45,13 @@ export default function Controls({ onOpenSettings }) {
 
   const handleCollect = () => {
     collectNow();
+    play("win");
   };
 
   const handleAudioToggle = () => {
     const newMutedState = !muted;
     setMuted(newMutedState);
-    setAudioMuted(newMutedState);
-
-    if (!newMutedState) {
-      setTimeout(() => play("basic_background"), 100);
-    } else {
-      stop();
-    }
+    setAudioMuted(newMutedState); // глушим/включаем звук глобально
   };
 
   return (
@@ -86,7 +71,6 @@ export default function Controls({ onOpenSettings }) {
           <div className="inline-block px-10 py-1 mb-1 text-[10px] leading-3 text-center text-white rounded-xl bg-black/60">
             AVOID {dropsCount} DROP{dropsCount !== 1 ? "S" : ""} ON LEVEL {displayLevel}
           </div>
-
 
           <CollectButton
             show={showCollect}
@@ -113,8 +97,12 @@ export default function Controls({ onOpenSettings }) {
 
       <div className="flex items-center justify-between">
         <div className="text-left">
-          <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff]  font-bold">BALANCE</div>
-          <div className="font-bold">{format(balance)} <font color="#ffc700">EUR</font></div>
+          <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff] font-bold">
+            BALANCE
+          </div>
+          <div className="font-bold">
+            {format(balance)} <font color="#ffc700">EUR</font>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 mb-2">
@@ -130,8 +118,12 @@ export default function Controls({ onOpenSettings }) {
             alt="Decrease bet"
           />
           <div className="text-center">
-            <div className="text-[12px] mt-5 leading-4 opacity-70 text-center text-[#64faff]  font-bold">BET</div>
-            <div className="font-bold">{format(bet)} <font color="#ffc700">EUR</font></div>
+            <div className="text-[12px] mt-5 leading-4 opacity-70 text-center text-[#64faff] font-bold">
+              BET
+            </div>
+            <div className="font-bold">
+              {format(bet)} <font color="#ffc700">EUR</font>
+            </div>
           </div>
           <IconButton
             px={48}
@@ -147,7 +139,7 @@ export default function Controls({ onOpenSettings }) {
         </div>
 
         <div className="text-right min-w-[92px]">
-          <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff]  font-bold">
+          <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff] font-bold">
             WIN
           </div>
           {currentWin > 0 ? (
@@ -157,21 +149,23 @@ export default function Controls({ onOpenSettings }) {
           )}
         </div>
       </div>
+
       <div className="absolute bottom-[-1px] left-0 w-full bg-[#0b1530] text-[#64faff] text-[10px] py-0 flex items-center justify-between font-semibold">
         <div className="flex items-center gap-2 pl-2">
-          <img src="/icon_image.png" alt="" className="w-4 h-4" /> 
+          <img src="/icon_image.png" alt="" className="w-4 h-4" />
           <span>Frog Princess</span>
         </div>
         <div className="uppercase pr-2">BALANCE: {format(balance)} EUR</div>
       </div>
 
-      <div className="pt-1"> 
-        <button 
-          onClick={toggleDrops} 
-          className="px-2 py-1 text-[10px] bg-red-600 text-white rounded shadow" 
-          title="Debug: show/hide all drops" > 
-            {showDrops ? "Unmark Drops" : "Mark Drops"} 
-        </button> 
+      <div className="pt-1">
+        <button
+          onClick={toggleDrops}
+          className="px-2 py-1 text-[10px] bg-red-600 text-white rounded shadow"
+          title="Debug: show/hide all drops"
+        >
+          {showDrops ? "Unmark Drops" : "Mark Drops"}
+        </button>
       </div>
     </div>
   );

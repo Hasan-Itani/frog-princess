@@ -173,19 +173,14 @@ export default function GameBoard() {
     overlayAmount,
   } = useBoard();
 
-  /* ---------- hooks: spawn / water-pop / dissolve ---------- */
-  // === центры/элементы тайлов для туториала (JS без типов)
   const padElemsRef = useRef({});
   const padCentersRef = useRef({});
 
-  // обёртка над исходным setPadRef из usePerchOverlay
   const setPadRefWithCenter = (row, col) => (el) => {
-    // пробрасываем в оригинальный реф
     setPadRef(row, col)(el);
 
     padElemsRef.current[`${row}:${col}`] = el;
 
-    // сразу считаем центр тайла в координатах GameBoard
     if (el && boardRef.current) {
       const br = boardRef.current.getBoundingClientRect();
       const er = el.getBoundingClientRect();
@@ -196,7 +191,6 @@ export default function GameBoard() {
     }
   };
 
-  // геттер центра для SwipeTutorial
   const getTileCenter = (row, col) => padCentersRef.current[`${row}:${col}`];
   const { spawnWaveKey, bumpSpawnWave } = useSpawnWave();
   const { getWaterPopKey, bumpWaterPop } = useWaterPop();
@@ -1134,7 +1128,7 @@ export default function GameBoard() {
         </motion.div>
       )}
       <Swipe
-        active={showTutorial}  // состояние, активен ли туториал
+        active={showTutorial}
         routes={tutorialRoutes}
         getTileCenter={(row, col) => {
           const pad = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);

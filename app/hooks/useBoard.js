@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useGame } from "./useGame";
 import { dropsForLevel } from "./useDrops";
+import { play } from "./audioManager";
 import {
   PADS_PER_ROW,
   WINDOW_SIZE,
@@ -156,7 +157,9 @@ export default function useBoard() {
       setFrogRow(rowIdx);
       setFrogCol(col);
       setFrogPhase("jump");
+      play("jump", { clone: true });
       setIsJumping(true);
+
 
       const traps = trapsForRow(rowIdx, PADS_PER_ROW, seed);
       const clickedIsTrap = traps.has(col);
@@ -179,33 +182,46 @@ export default function useBoard() {
   );
 
   const onFrogJumpEnd = useCallback(() => {
-    if (!jumpMeta) return;
-    const { row, trap, starting } = jumpMeta;
+  if (!jumpMeta) return;
+  const { row, trap, starting } = jumpMeta;
 
-    setFrogPhase("idle");
+  setFrogPhase("idle");
 
-    if (trap) {
-      setTimeout(() => {
-        const full = {};
-        for (let i = 0; i < levelsCount; i++) full[i] = true;
+  if (trap) {
+    setTimeout(() => {
+      const full = {};
+      for (let i = 0; i < levelsCount; i++) full[i] = true;
 
-        setRevealAll(true);
-        setRevealedMap(full);
+      setRevealAll(true);
+      setRevealedMap(full);
 
-        setFrogPhase("curl");
-        dropNow(true);
-
-        setIsJumping(false);
-        setJumpMeta(null);
-      }, SIT_MS);
-    } else {
-      setRevealedMap((m) => ({ ...m, [row]: true }));
-      advanceOneLevel(starting);
+      setFrogPhase("curl");
+      dropNow(true);
 
       setIsJumping(false);
       setJumpMeta(null);
-    }
-  }, [jumpMeta, levelsCount, dropNow, advanceOneLevel]);
+
+      // 🔊 Звуки — после обновления состояния
+      const sounds = ["failed", "failed_2"];
+      const sounds2 = ["wohoo", "woopie"];
+
+      const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+      play(randomSound, { clone: true });
+
+      setTimeout(() => {
+        const randomSound2 = sounds2[Math.floor(Math.random() * sounds2.length)];
+        play(randomSound2, { clone: true });
+      }, 1000);
+
+    }, SIT_MS);
+  } else {
+    setRevealedMap((m) => ({ ...m, [row]: true }));
+    advanceOneLevel(starting);
+
+    setIsJumping(false);
+    setJumpMeta(null);
+  }
+}, [jumpMeta, levelsCount, dropNow, advanceOneLevel]);
 
   return {
     // frog
