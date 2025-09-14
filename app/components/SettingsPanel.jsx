@@ -116,22 +116,50 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
         {activeTab === "rules" && <RulesContent />}
 
         {activeTab === "settings" && (
-          <div className="w-full max-w-[420px] mx-auto space-y-3 text-center">
+          <div className="w-full max-w-[420px] mx-auto space-y-6 text-center">
             <PartTitle>SETTINGS</PartTitle>
             <TinyMuted>Adjust general preferences for your game.</TinyMuted>
-            <div className="grid gap-2">
-              <div className="p-3 rounded-xl border border-sky-400/25 bg-white/5">
-                <div className="font-bold text-sky-300">Sound</div>
+
+            {/* Volume Control */}
+            <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 space-y-3">
+              <div className="font-bold text-sky-300 mb-2">Audio Volume</div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                defaultValue={70}
+                className="w-full accent-orange-500 cursor-pointer"
+                onInput={(e) => {
+                  const volume = e.target.value / 100;
+                  // TODO: подключить сюда GameContext / Howler
+                  console.log("Volume:", volume);
+                }}
+              />
+            </div>
+
+            {/* Toggle Splash Screen */}
+            <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 flex items-center justify-between">
+              <div className="text-left">
+                <div className="font-bold text-sky-300">Show Splash Screen</div>
                 <div className="text-sm opacity-90">
-                  Click to mute game sound more or less.
+                  Enable or disable intro splash screen.
                 </div>
               </div>
-              <div className="p-3 rounded-xl border border-sky-400/25 bg-white/5">
-                <div className="font-bold text-sky-300">Menu</div>
-                <div className="text-sm opacity-90">
-                  Click to access the game settings and rules.
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  defaultChecked={true}
+                  onChange={(e) => {
+                    console.log("Splash screen enabled:", e.target.checked);
+                  }}
+                />
+                <div className="w-12 h-6 bg-gray-500 rounded-full peer peer-checked:bg-orange-500 transition-colors">
+                  <div className="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 peer-checked:translate-x-6" />
                 </div>
-              </div>
+              </label>
             </div>
           </div>
         )}
