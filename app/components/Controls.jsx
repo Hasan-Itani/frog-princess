@@ -121,7 +121,7 @@ export default function Controls({ onOpenSettings }) {
             <div className="text-[12px] mt-5 leading-4 opacity-70 text-center text-[#64faff] font-bold">
               BET
             </div>
-            <div className="font-bold">
+            <div className="font-bold text-[15px]">
               {format(bet)} <font color="#ffc700">EUR</font>
             </div>
           </div>
@@ -150,14 +150,6 @@ export default function Controls({ onOpenSettings }) {
         </div>
       </div>
 
-      <div className="absolute bottom-[-1px] left-0 w-full bg-[#0b1530] text-[#64faff] text-[10px] py-0 flex items-center justify-between font-semibold">
-        <div className="flex items-center gap-2 pl-2">
-          <img src="/icon_image.png" alt="" className="w-4 h-4" />
-          <span>Frog Princess</span>
-        </div>
-        <div className="uppercase pr-2">BALANCE: {format(balance)} EUR</div>
-      </div>
-
       <div className="pt-1">
         <button
           onClick={toggleDrops}
@@ -166,6 +158,14 @@ export default function Controls({ onOpenSettings }) {
         >
           {showDrops ? "Unmark Drops" : "Mark Drops"}
         </button>
+      </div>
+
+      <div className="absolute bottom-[-1px] left-0 w-full bg-[#0b1530] text-[#64faff] text-[10px] py-0 flex items-center justify-between font-semibold">
+        <div className="flex items-center gap-2 pl-2">
+          <img src="/icon_image.png" alt="" className="w-4 h-4" />
+          <span>Frog Princess</span>
+        </div>
+        <div className="uppercase pr-2">BALANCE: {format(balance)} EUR</div>
       </div>
     </div>
   );
