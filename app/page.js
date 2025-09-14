@@ -9,12 +9,17 @@ import SakuraFall from "./components/animations/SakuraFall";
 import Water from "./components/animations/Water";
 import Swipe from "./components/animations/Swipe";
 import Image from "next/image";
+import useAudio from "./hooks/useAudio"; 
 
 function OverlayStart({ children }) {
   const [started, setStarted] = useState(false);
+  const audio = useAudio();
 
   const handleStart = () => {
     setStarted(true);
+    audio.unlock("ambience");   
+    audio.playMusic("ambience"); 
+
   };
 
   if (!started) {
