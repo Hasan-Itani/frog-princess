@@ -9,7 +9,7 @@ export const ROCK_SPACE = 96;
 export const LILY_BTN = 72;
 export const LILY_IMG = 80;
 
-export const BADGE_W = 48;
+export const BADGE_W = 58;
 export const BADGE_GUTTER = BADGE_W + 16;
 
 export const ROW_H = 60;

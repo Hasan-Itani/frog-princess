@@ -122,15 +122,49 @@ export default function GameBoard() {
   const { showDrops } = useDebug();
   const IDLE_MS = 20000;
   const tutorialRoutes = [
-    [ {row:0,col:0}, {row:1,col:1}, {row:2,col:2}, {row:3,col:3}, {row:4,col:4} ],
-    [ {row:0,col:4}, {row:1,col:3}, {row:2,col:4}, {row:3,col:3}, {row:4,col:2} ],
-    [ {row:0,col:2}, {row:1,col:2}, {row:2,col:2}, {row:3,col:2}, {row:4,col:2} ],
-    [ {row:4,col:0}, {row:4,col:1}, {row:4,col:2}, {row:4,col:3}, {row:4,col:4} ],
-    [ {row:0,col:0}, {row:0,col:1}, {row:0,col:2}, {row:1,col:2}, {row:2,col:2} ],
-    [ {row:0,col:0}, {row:1,col:0}, {row:1,col:1}, {row:2,col:1}, {row:2,col:2} ],
+    [
+      { row: 0, col: 0 },
+      { row: 1, col: 1 },
+      { row: 2, col: 2 },
+      { row: 3, col: 3 },
+      { row: 4, col: 4 },
+    ],
+    [
+      { row: 0, col: 4 },
+      { row: 1, col: 3 },
+      { row: 2, col: 4 },
+      { row: 3, col: 3 },
+      { row: 4, col: 2 },
+    ],
+    [
+      { row: 0, col: 2 },
+      { row: 1, col: 2 },
+      { row: 2, col: 2 },
+      { row: 3, col: 2 },
+      { row: 4, col: 2 },
+    ],
+    [
+      { row: 4, col: 0 },
+      { row: 4, col: 1 },
+      { row: 4, col: 2 },
+      { row: 4, col: 3 },
+      { row: 4, col: 4 },
+    ],
+    [
+      { row: 0, col: 0 },
+      { row: 0, col: 1 },
+      { row: 0, col: 2 },
+      { row: 1, col: 2 },
+      { row: 2, col: 2 },
+    ],
+    [
+      { row: 0, col: 0 },
+      { row: 1, col: 0 },
+      { row: 1, col: 1 },
+      { row: 2, col: 1 },
+      { row: 2, col: 2 },
+    ],
   ];
-
-
 
   const [showTutorial, setShowTutorial] = useState(false);
   const idleTimer = useRef(null);
@@ -173,14 +207,19 @@ export default function GameBoard() {
     overlayAmount,
   } = useBoard();
 
+  /* ---------- hooks: spawn / water-pop / dissolve ---------- */
+  // === центры/элементы тайлов для туториала (JS без типов)
   const padElemsRef = useRef({});
   const padCentersRef = useRef({});
 
+  // обёртка над исходным setPadRef из usePerchOverlay
   const setPadRefWithCenter = (row, col) => (el) => {
+    // пробрасываем в оригинальный реф
     setPadRef(row, col)(el);
 
     padElemsRef.current[`${row}:${col}`] = el;
 
+    // сразу считаем центр тайла в координатах GameBoard
     if (el && boardRef.current) {
       const br = boardRef.current.getBoundingClientRect();
       const er = el.getBoundingClientRect();
@@ -191,6 +230,7 @@ export default function GameBoard() {
     }
   };
 
+  // геттер центра для SwipeTutorial
   const getTileCenter = (row, col) => padCentersRef.current[`${row}:${col}`];
   const { spawnWaveKey, bumpSpawnWave } = useSpawnWave();
   const { getWaterPopKey, bumpWaterPop } = useWaterPop();
@@ -340,11 +380,11 @@ export default function GameBoard() {
     }
   }, [isJumping, finishReason]);
 
-
   const symbolToImage = (char, isHighlighted) => {
     const color = isHighlighted ? "yellow" : "gray";
 
-    if (char === "x") return { src: `/multi_${color}.png`, w: 14, h: 18, dy: 3 };
+    if (char === "x")
+      return { src: `/multi_${color}.png`, w: 14, h: 18, dy: 3 };
     if (char === ".") return { src: `/dot_${color}.png`, w: 6, h: 6, dy: 6 };
     return { src: `/digits_${color}/${char}.png`, w: 14, h: 18, dy: 0 };
   };
@@ -361,23 +401,22 @@ export default function GameBoard() {
   }, [isJumping]);
 
   useEffect(() => {
-  const recalc = () => {
-    if (!boardRef.current) return;
-    const br = boardRef.current.getBoundingClientRect();
-    for (const [key, el] of Object.entries(padElemsRef.current)) {
-      if (!el) continue;
-      const er = el.getBoundingClientRect();
-      padCentersRef.current[key] = {
-        x: er.left - br.left + er.width / 2,
-        y: er.top - br.top + er.height / 2,
-      };
-    }
-  };
-  recalc();
-  window.addEventListener("resize", recalc);
-  return () => window.removeEventListener("resize", recalc);
-}, [rowsY]); // при сдвигах строк тоже пересчитываем
-
+    const recalc = () => {
+      if (!boardRef.current) return;
+      const br = boardRef.current.getBoundingClientRect();
+      for (const [key, el] of Object.entries(padElemsRef.current)) {
+        if (!el) continue;
+        const er = el.getBoundingClientRect();
+        padCentersRef.current[key] = {
+          x: er.left - br.left + er.width / 2,
+          y: er.top - br.top + er.height / 2,
+        };
+      }
+    };
+    recalc();
+    window.addEventListener("resize", recalc);
+    return () => window.removeEventListener("resize", recalc);
+  }, [rowsY]); // при сдвигах строк тоже пересчитываем
 
   /* ---------- LOSE overlay (frog_lose_1..8) ---------- */
   const [loseAnim, setLoseAnim] = useState(null); // { x, y, facingDeg }
@@ -507,7 +546,10 @@ export default function GameBoard() {
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-10">
                           {`x${mult.toFixed(2)}`.split("").map((char, idx) => {
-                            const { src, w, h, dy } = symbolToImage(char, highlightRow === rowIndexGlobal);
+                            const { src, w, h, dy } = symbolToImage(
+                              char,
+                              highlightRow === rowIndexGlobal
+                            );
                             return (
                               <img
                                 key={idx}
@@ -517,7 +559,9 @@ export default function GameBoard() {
                                 style={{
                                   width: w,
                                   height: h,
-                                  transform: `translateY(${dy}px) scale(${highlightRow === rowIndexGlobal ? 1.2 : 1})`,
+                                  transform: `translateY(${dy}px) scale(${
+                                    highlightRow === rowIndexGlobal ? 1.2 : 1
+                                  })`,
                                 }}
                               />
                             );
@@ -803,22 +847,31 @@ export default function GameBoard() {
                             )}
                           </div>
                           <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-10">
-                            {`x${mult.toFixed(2)}`.split("").map((char, idx) => {
-                              const { src, w, h, dy } = symbolToImage(char, highlightRow === rowIndexGlobal);
-                              return (
-                                <img
-                                  key={idx}
-                                  src={src}
-                                  alt={char}
-                                  className="object-contain transition-all duration-500 ease-in-out"
-                                  style={{
-                                    width: w,
-                                    height: h,
-                                    transform: `translateY(${dy}px) scale(${highlightRow === rowIndexGlobal ? 1.2 : 1})`,
-                                  }}
-                                />
-                              );
-                            })}
+                            {`x${mult.toFixed(2)}`
+                              .split("")
+                              .map((char, idx) => {
+                                const { src, w, h, dy } = symbolToImage(
+                                  char,
+                                  highlightRow === rowIndexGlobal
+                                );
+                                return (
+                                  <img
+                                    key={idx}
+                                    src={src}
+                                    alt={char}
+                                    className="object-contain transition-all duration-500 ease-in-out"
+                                    style={{
+                                      width: w,
+                                      height: h,
+                                      transform: `translateY(${dy}px) scale(${
+                                        highlightRow === rowIndexGlobal
+                                          ? 1.2
+                                          : 1
+                                      })`,
+                                    }}
+                                  />
+                                );
+                              })}
                           </div>
                         </div>
                       );
@@ -890,7 +943,7 @@ export default function GameBoard() {
             onAnimationComplete={() => {
               if (landedOnceRef.current) return;
               landedOnceRef.current = true;
-              handleFrogJumpEnd(); 
+              handleFrogJumpEnd();
             }}
             style={{
               width: FROG_SIZE,
@@ -1106,39 +1159,43 @@ export default function GameBoard() {
                 YOU WON
               </div>
               <div className="flex items-center justify-center gap-1 mt-1 z-50">
-                {`${format ? format(overlayAmount) : overlayAmount}`.split("").map((char, idx) => {
-                  const { src, w, h, dy } = symbolToImage(char, "yellow");
-                  return (
-                    <img
-                      key={idx}
-                      src={src}
-                      alt={char}
-                      className="object-contain drop-shadow"
-                      style={{
-                        width: w,
-                        height: h,
-                        transform: `translateY(${dy}px)`
-                      }}
-                    />
-                  );
-                })}
+                {`${format ? format(overlayAmount) : overlayAmount}`
+                  .split("")
+                  .map((char, idx) => {
+                    const { src, w, h, dy } = symbolToImage(char, "yellow");
+                    return (
+                      <img
+                        key={idx}
+                        src={src}
+                        alt={char}
+                        className="object-contain drop-shadow"
+                        style={{
+                          width: w,
+                          height: h,
+                          transform: `translateY(${dy}px)`,
+                        }}
+                      />
+                    );
+                  })}
               </div>
             </div>
           </div>
         </motion.div>
       )}
       <Swipe
-        active={showTutorial}
+        active={showTutorial} // состояние, активен ли туториал
         routes={tutorialRoutes}
         getTileCenter={(row, col) => {
-          const pad = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+          const pad = document.querySelector(
+            `[data-row="${row}"][data-col="${col}"]`
+          );
           if (!pad) return null;
           const br = boardRef.current.getBoundingClientRect();
           const rect = pad.getBoundingClientRect();
           return {
             x: rect.left - br.left + rect.width / 2,
             y: rect.top - br.top + rect.height / 2,
-          };  
+          };
         }}
         onDone={() => console.log("swipe finished")}
       />

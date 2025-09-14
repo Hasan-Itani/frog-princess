@@ -7,15 +7,38 @@ import { PartTitle, TinyMuted } from "./ui/SectionText";
 import ImgLily from "./ui/ImgLily";
 import RulesContent from "./RulesContent";
 import useBetQuickPick from "../hooks/useBetQuickPick";
-import { play, setVolume } from "../hooks/audioManager";
-
+import useAudio from "../hooks/useAudio";
 
 export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
-  const [phase, setPhase] = useState("enter"); 
+  const [phase, setPhase] = useState("enter");
 
-  const { BET_STEPS = [], betIndex, isPlaying, format } = useGame();
-  
+  const { BET_STEPS = [], betIndex, isPlaying, format, setMuted } = useGame();
   const { setBetTarget } = useBetQuickPick();
+
+  const {
+    // music
+    getMusicVolume,
+    setMusicVolume,
+    isMusicMuted,
+    setMusicMuted,
+    getCurrentMusic,
+    playMusic,
+    // sfx
+    getSfxVolume,
+    setSfxVolume,
+    isSfxMuted,
+    setSfxMuted,
+  } = useAudio();
+
+  const [musicVol, setMusicVol] = useState(() =>
+    Math.round(getMusicVolume() * 100)
+  );
+  const [sfxVol, setSfxVol] = useState(() => Math.round(getSfxVolume() * 100));
+  const [musicMuteUI, setMusicMuteUI] = useState(isMusicMuted());
+  const [sfxMuteUI, setSfxMuteUI] = useState(isSfxMuted());
+  const [bgChoice, setBgChoice] = useState(
+    getCurrentMusic() || "basic_background"
+  );
 
   useEffect(() => {
     const t = setTimeout(() => setPhase("idle"), 10);
@@ -25,7 +48,6 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
   function handleClose() {
     setPhase("exit");
     setTimeout(onClose, 450);
-    play("button");
   }
 
   return (
@@ -60,7 +82,6 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
             <PartTitle>PLACE YOUR BET</PartTitle>
             <TinyMuted>CHOOSE YOUR BET ON THE COUNTER</TinyMuted>
 
-            {/* Visual +/- blocked while game is running */}
             <div className="flex items-center justify-center gap-3">
               <button
                 disabled
@@ -81,7 +102,6 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
 
             <BlueDivider />
 
-            {/* Quick-pick grid — sets bet immediately */}
             <div className="grid grid-cols-4 gap-2">
               {BET_STEPS.map((betValue, idx) => {
                 const label =
@@ -120,49 +140,112 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
         {activeTab === "rules" && <RulesContent />}
 
         {activeTab === "settings" && (
-          <div className="w-full max-w-[420px] mx-auto space-y-6 text-center">
+          <div className="w-full max-w-[520px] mx-auto space-y-6">
             <PartTitle>SETTINGS</PartTitle>
-            <TinyMuted>Adjust general preferences for your game.</TinyMuted>
+            <TinyMuted>
+              Music and sound effects are controlled separately.
+            </TinyMuted>
 
-            {/* Volume Control */}
+            {/* BG track picker */}
             <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 space-y-3">
-              <div className="font-bold text-sky-300 mb-2">Audio Volume</div>
+              <div className="font-bold text-sky-300 mb-2">
+                Background Track
+              </div>
+              <div className="flex gap-2">
+                {[
+                  { key: "ambience", label: "Ambience" },
+                  { key: "basic_background", label: "Basic" },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    className={[
+                      "px-3 py-2 rounded-md font-bold border transition",
+                      bgChoice === opt.key
+                        ? "bg-sky-500/30 border-sky-400/70"
+                        : "bg-sky-500/15 border-sky-400/30 hover:bg-sky-500/30",
+                    ].join(" ")}
+                    onClick={() => {
+                      setBgChoice(opt.key);
+                      playMusic(opt.key); // switches instantly
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <TinyMuted>Only one background plays at a time.</TinyMuted>
+            </div>
+
+            {/* Music mixer */}
+            <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-sky-300">Music Volume</div>
+                <button
+                  className={[
+                    "px-2 py-1 rounded text-xs font-bold",
+                    musicMuteUI ? "bg-red-600/80" : "bg-green-600/80",
+                  ].join(" ")}
+                  onClick={() => {
+                    const next = !musicMuteUI;
+                    setMusicMuteUI(next);
+                    setMusicMuted(next);
+                    setMuted(next); // keep game.muted in sync with MUSIC
+                  }}
+                >
+                  {musicMuteUI ? "Unmute" : "Mute"}
+                </button>
+              </div>
               <input
                 type="range"
                 min="0"
                 max="100"
                 step="1"
-                defaultValue={70}
+                value={musicVol}
                 className="w-full accent-orange-500 cursor-pointer"
-                onInput={(e) => {
-                  const volume = e.target.value / 100;
-                  setVolume(volume);
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setMusicVol(v);
+                  setMusicVolume(v / 100);
                 }}
               />
+              <div className="text-sm opacity-80">{musicVol}%</div>
             </div>
 
-            {/* Toggle Splash Screen */}
-            <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 flex items-center justify-between">
-              <div className="text-left">
-                <div className="font-bold text-sky-300">Show Splash Screen</div>
-                <div className="text-sm opacity-90">
-                  Enable or disable intro splash screen.
-                </div>
-              </div>
-
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  defaultChecked={true}
-                  onChange={(e) => {
-                    console.log("Splash screen enabled:", e.target.checked);
+            {/* SFX mixer */}
+            <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-sky-300">SFX Volume</div>
+                <button
+                  className={[
+                    "px-2 py-1 rounded text-xs font-bold",
+                    sfxMuteUI ? "bg-red-600/80" : "bg-green-600/80",
+                  ].join(" ")}
+                  onClick={() => {
+                    const next = !sfxMuteUI;
+                    setSfxMuteUI(next);
+                    setSfxMuted(next);
                   }}
-                />
-                <div className="w-12 h-6 bg-gray-500 rounded-full peer peer-checked:bg-orange-500 transition-colors">
-                  <div className="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 peer-checked:translate-x-6" />
-                </div>
-              </label>
+                >
+                  {sfxMuteUI ? "Unmute" : "Mute"}
+                </button>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={sfxVol}
+                className="w-full accent-orange-500 cursor-pointer"
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setSfxVol(v);
+                  setSfxVolume(v / 100);
+                }}
+              />
+              <div className="text-sm opacity-80">{sfxVol}%</div>
+              <TinyMuted>
+                Clicks (e.g., +/-) are SFX and won’t be muted by Music.
+              </TinyMuted>
             </div>
           </div>
         )}
@@ -176,10 +259,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/cash_hover.png"
           activeIcon="/cash_selected.png"
           isActive={activeTab === "bet"}
-          onClick={() => {
-            play("button");
-            setActiveTab("bet")
-          }}
+          onClick={() => setActiveTab("bet")}
           alt="Cash"
         />
         <IconButton
@@ -188,10 +268,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/info_hover.png"
           activeIcon="/info_selected.png"
           isActive={activeTab === "rules"}
-          onClick={() => {
-            setActiveTab("rules");
-            play("button");
-          }}
+          onClick={() => setActiveTab("rules")}
           alt="Info"
         />
         <IconButton
@@ -200,10 +277,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/settings_hover.png"
           activeIcon="/settings_selected.png"
           isActive={activeTab === "settings"}
-          onClick={() => {
-            play("button");
-            setActiveTab("settings")
-          }}
+          onClick={() => setActiveTab("settings")}
           alt="Settings"
         />
         <IconButton
