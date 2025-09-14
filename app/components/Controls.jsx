@@ -184,14 +184,7 @@ export default function Controls({ onOpenSettings }) {
         </div>
       </div>
 
-      {/* footer bar */}
-      <div className="absolute bottom-[-1px] left-0 w-full bg-[#0b1530] text-[#64faff] text-[10px] py-0 flex items-center justify-between font-semibold">
-        <div className="flex items-center gap-2 pl-2">
-          <img src="/icon_image.png" alt="" className="w-4 h-4" />
-          <span>Frog Princess</span>
-        </div>
-        <div className="uppercase pr-2">BALANCE: {format(balance)} EUR</div>
-      </div>
+    
 
       {/* debug */}
       <div className="pt-1">
