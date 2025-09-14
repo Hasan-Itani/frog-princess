@@ -16,10 +16,7 @@ export default function useRowsSlide(visibleIndices, rowStride, onShift) {
     const prevTop = prevTopRef.current ?? visibleIndices[0];
     const nextTop = visibleIndices[0];
 
-    if (nextTop === prevTop) {
-      setRenderedIndices(visibleIndices);
-      return;
-    }
+    if (nextTop === prevTop) return;
 
     const dir = Math.sign(nextTop - prevTop);
     const distance = Math.abs(nextTop - prevTop) * rowStride;
@@ -35,7 +32,7 @@ export default function useRowsSlide(visibleIndices, rowStride, onShift) {
 
     const finalize = () => {
       if (onShift) onShift(shift);
-      setRenderedIndices(visibleIndices);
+      setRenderedIndices([...visibleIndices]);
       rowsY.set(0);
       prevTopRef.current = nextTop;
       rowsAnimRef.current = null;
@@ -46,7 +43,7 @@ export default function useRowsSlide(visibleIndices, rowStride, onShift) {
     return () => {
       if (rowsAnimRef.current) rowsAnimRef.current.stop();
     };
-  }, [visibleIndices, rowStride, onShift, rowsY]);
+  }, [visibleIndices, rowStride]);
 
   return { renderedIndices, rowsY };
 }

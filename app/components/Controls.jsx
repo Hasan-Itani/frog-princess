@@ -1,9 +1,9 @@
 "use client";
-// ⬇️ adjust this path if your useGame is elsewhere (e.g. "../useGame")
+
 import { useGame } from "../hooks/useGame";
 import IconButton from "./ui/IconButton";
 import CollectButton from "./ui/CollectButton";
-import { useDebug } from "../hooks/useDebug"; // ⬅️ added
+import { useDebug } from "../hooks/useDebug";
 import useAudio from "../hooks/useAudio";
 import { useEffect } from "react";
 import { dropsForLevel } from "../hooks/useDrops";
@@ -27,13 +27,11 @@ export default function Controls({ onOpenSettings }) {
     levelsCount,
   } = useGame();
 
-  const { showDrops, toggleDrops } = useDebug(); // ⬅️ added
+  const { showDrops, toggleDrops } = useDebug();
 
   const showCollect = isPlaying && level > 0 && !showWinOverlay;
 
-  // human-readable next level (cap at max)
   const displayLevel = Math.min(level + 1, levelsCount);
-  // cap drops to 4 (since there are 5 pads → at least one safe)
   const dropsCount = Math.min(dropsForLevel(level), 4);
 
   const { play, stop, setMuted: setAudioMuted } = useAudio();
@@ -85,11 +83,10 @@ export default function Controls({ onOpenSettings }) {
         />
 
         <div className="flex-1 flex flex-col items-center justify-center">
-          {/* The label you asked for */}
-          <div className="text-[10px] leading-3 opacity-80 mb-1 text-center">
-            AVOID {dropsCount} DROP{dropsCount !== 1 ? "S" : ""} ON LEVEL{" "}
-            {displayLevel}
+          <div className="inline-block px-10 py-1 mb-1 text-[10px] leading-3 text-center text-white rounded-xl bg-black/60">
+            AVOID {dropsCount} DROP{dropsCount !== 1 ? "S" : ""} ON LEVEL {displayLevel}
           </div>
+
 
           <CollectButton
             show={showCollect}
@@ -116,54 +113,65 @@ export default function Controls({ onOpenSettings }) {
 
       <div className="flex items-center justify-between">
         <div className="text-left">
-          <div className="text-[10px] leading-3 opacity-70">BALANCE</div>
-          <div className="font-bold">{format(balance)}</div>
+          <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff]  font-bold">BALANCE</div>
+          <div className="font-bold">{format(balance)} <font color="#ffc700">EUR</font></div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDecrement}
-            className="w-7 h-7 rounded-full bg-white text-black font-bold text-lg leading-none grid place-items-center disabled:opacity-40"
+        <div className="flex items-center gap-2 mb-2">
+          <IconButton
+            px={48}
+            icon="/deleteBetNegative.png"
+            hoverIcon="/deleteBetHovered.png"
+            activeIcon="/deleteBetHovered.png"
+            disabledIcon="/deleteBetDisabled.png"
+            isActive={false}
             disabled={isPlaying || !canDecrementBet}
-            aria-label="Decrease bet"
-          >
-            -
-          </button>
+            onClick={handleDecrement}
+            alt="Decrease bet"
+          />
           <div className="text-center">
-            <div className="text-[10px] leading-3 opacity-70">SET BET</div>
-            <div className="font-bold">{format(bet)}</div>
+            <div className="text-[12px] mt-5 leading-4 opacity-70 text-center text-[#64faff]  font-bold">BET</div>
+            <div className="font-bold">{format(bet)} <font color="#ffc700">EUR</font></div>
           </div>
-          <button
-            onClick={handleIncrement}
-            className="w-7 h-7 rounded-full bg-white text-black font-bold text-lg leading-none grid place-items-center disabled:opacity-40"
+          <IconButton
+            px={48}
+            icon="/addBetPositive.png"
+            hoverIcon="/addBetHovered.png"
+            activeIcon="/addBetHovered.png"
+            disabledIcon="/addBetDisabled.png"
+            isActive={false}
             disabled={isPlaying || !canIncrementBet}
-            aria-label="Increase bet"
-          >
-            +
-          </button>
+            onClick={handleIncrement}
+            alt="Increase bet"
+          />
         </div>
 
         <div className="text-right min-w-[92px]">
-          <div className="text-[10px] leading-3 opacity-70 text-center">
+          <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff]  font-bold">
             WIN
           </div>
           {currentWin > 0 ? (
             <div className="text-green-400 font-bold">{format(currentWin)}</div>
           ) : (
-            <div className="text-green-400 font-bold">GOOD LUCK!</div>
+            <div className="text-white font-bold">GOOD LUCK!</div>
           )}
         </div>
       </div>
+      <div className="absolute bottom-[-1px] left-0 w-full bg-[#0b1530] text-[#64faff] text-[10px] py-0 flex items-center justify-between font-semibold">
+        <div className="flex items-center gap-2 pl-2">
+          <img src="/icon_image.png" alt="" className="w-4 h-4" /> 
+          <span>Frog Princess</span>
+        </div>
+        <div className="uppercase pr-2">BALANCE: {format(balance)} EUR</div>
+      </div>
 
-      {/* 🔧 tiny dev toggle (added, everything else unchanged) */}
-      <div className="pt-1">
-        <button
-          onClick={toggleDrops}
-          className="px-2 py-1 text-[10px] bg-red-600 text-white rounded shadow"
-          title="Debug: show/hide all drops"
-        >
-          {showDrops ? "Unmark Drops" : "Mark Drops"}
-        </button>
+      <div className="pt-1"> 
+        <button 
+          onClick={toggleDrops} 
+          className="px-2 py-1 text-[10px] bg-red-600 text-white rounded shadow" 
+          title="Debug: show/hide all drops" > 
+            {showDrops ? "Unmark Drops" : "Mark Drops"} 
+        </button> 
       </div>
     </div>
   );

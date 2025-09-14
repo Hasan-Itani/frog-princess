@@ -10,7 +10,9 @@ export default function IconButton({
   icon,
   hoverIcon,
   activeIcon,
+  disabledIcon,     // ✅ новое свойство
   isActive,
+  disabled = false, // ✅ новое свойство
   onClick,
   alt,
   size = 14,
@@ -24,11 +26,12 @@ export default function IconButton({
     const map = { 10: 40, 12: 48, 14: 56, 16: 64, 20: 80 };
     const n = Number(s);
     if (!Number.isNaN(n) && map[n]) return map[n];
-    return 56; 
+    return 56;
   };
   const dim = typeof px === "number" ? px : sizeToPx(size);
 
   const getIcon = () => {
+    if (disabled && disabledIcon) return disabledIcon; // ✅ при disabled
     if (press) return activeIcon;
     if (isActive) return activeIcon;
     if (hover) return hoverIcon;
@@ -37,13 +40,14 @@ export default function IconButton({
 
   return (
     <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
+      onClick={disabled ? undefined : onClick} // ✅ отключаем клик
+      disabled={disabled}
+      onMouseEnter={() => !disabled && setHover(true)} // ✅ ховер игнорим если disabled
       onMouseLeave={() => {
         setHover(false);
         setPress(false);
       }}
-      onMouseDown={() => setPress(true)}
+      onMouseDown={() => !disabled && setPress(true)}
       onMouseUp={() => setPress(false)}
       className={`inline-flex items-center justify-center ${className}`}
       style={{ width: dim, height: dim }}
@@ -52,7 +56,12 @@ export default function IconButton({
       <img
         src={getIcon()}
         alt={alt}
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          opacity: disabled && !disabledIcon ? 0.5 : 1, // ✅ fallback для disabled
+        }}
       />
     </button>
   );

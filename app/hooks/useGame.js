@@ -35,7 +35,7 @@ export function GameProvider({ children }) {
   const canDecrementBet = betIndex > 0;
   const canIncrementBet = betIndex < BET_STEPS.length - 1;
 
-  const format = useCallback((v) => `${v.toFixed(2)} EUR`, []);
+  const format = useCallback((v) => `${v.toFixed(2)}`, []);
   const levelsCount = MULTIPLIERS.length;
 
   const nextWinIfAdvance = useMemo(() => {

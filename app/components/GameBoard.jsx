@@ -18,6 +18,8 @@ import useRowsSlide from "../hooks/useRowsSlide";
 import usePerchOverlay from "../hooks/usePerchOverlay";
 import useIntroSweep from "../hooks/useIntroSweep";
 import useEgressEntry from "../hooks/useEgressEntry";
+import SwipeTutorial from "./Tutorial/SwipeTutorial";
+import Swipe from "./animations/Swipe";
 
 import {
   PADS_PER_ROW,
@@ -71,6 +73,29 @@ function FrogLoseFlipbook({ size = 70, facingDeg = 0, fps = 20, onDone }) {
   );
 }
 
+function MultiplierImages({ mult }) {
+  const str = mult.toString();
+  return (
+    <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-[20]">
+      {str.split("").map((ch, i) => {
+        let src;
+        if (ch === "x" || ch === "X") src = "/multi_gray.png";
+        else if (ch === ".") src = "/dot_gray.png";
+        else src = `/${ch}.png`; // 0.png .. 9.png
+
+        return (
+          <img
+            key={i}
+            src={src}
+            alt={ch}
+            className="w-[11px] h-auto select-none pointer-events-none"
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 /* Fallback gold lily if Next/Image fails */
 function GoldStatic({ size }) {
   const [srcs, setSrcs] = useState([
@@ -95,6 +120,40 @@ function GoldStatic({ size }) {
 export default function GameBoard() {
   const { format, finishReason, isPlaying, level } = useGame();
   const { showDrops } = useDebug();
+  const IDLE_MS = 20000;
+  const tutorialRoutes = [
+    [ {row:0,col:0}, {row:1,col:1}, {row:2,col:2}, {row:3,col:3}, {row:4,col:4} ],
+    [ {row:0,col:4}, {row:1,col:3}, {row:2,col:4}, {row:3,col:3}, {row:4,col:2} ],
+    [ {row:0,col:2}, {row:1,col:2}, {row:2,col:2}, {row:3,col:2}, {row:4,col:2} ],
+    [ {row:4,col:0}, {row:4,col:1}, {row:4,col:2}, {row:4,col:3}, {row:4,col:4} ],
+    [ {row:0,col:0}, {row:0,col:1}, {row:0,col:2}, {row:1,col:2}, {row:2,col:2} ],
+    [ {row:0,col:0}, {row:1,col:0}, {row:1,col:1}, {row:2,col:1}, {row:2,col:2} ],
+  ];
+
+
+
+  const [showTutorial, setShowTutorial] = useState(false);
+  const idleTimer = useRef(null);
+
+  const resetIdle = () => {
+    setShowTutorial(false);
+    clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => setShowTutorial(true), IDLE_MS);
+  };
+
+  useEffect(() => {
+    resetIdle();
+    const handler = () => resetIdle();
+    window.addEventListener("pointerdown", handler, { passive: true });
+    window.addEventListener("keydown", handler);
+    window.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      clearTimeout(idleTimer.current);
+      window.removeEventListener("pointerdown", handler);
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("touchstart", handler);
+    };
+  }, []);
   const {
     visibleIndices,
     rowOpacity,
@@ -115,6 +174,30 @@ export default function GameBoard() {
   } = useBoard();
 
   /* ---------- hooks: spawn / water-pop / dissolve ---------- */
+  // === центры/элементы тайлов для туториала (JS без типов)
+  const padElemsRef = useRef({});
+  const padCentersRef = useRef({});
+
+  // обёртка над исходным setPadRef из usePerchOverlay
+  const setPadRefWithCenter = (row, col) => (el) => {
+    // пробрасываем в оригинальный реф
+    setPadRef(row, col)(el);
+
+    padElemsRef.current[`${row}:${col}`] = el;
+
+    // сразу считаем центр тайла в координатах GameBoard
+    if (el && boardRef.current) {
+      const br = boardRef.current.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      padCentersRef.current[`${row}:${col}`] = {
+        x: er.left - br.left + er.width / 2,
+        y: er.top - br.top + er.height / 2,
+      };
+    }
+  };
+
+  // геттер центра для SwipeTutorial
+  const getTileCenter = (row, col) => padCentersRef.current[`${row}:${col}`];
   const { spawnWaveKey, bumpSpawnWave } = useSpawnWave();
   const { getWaterPopKey, bumpWaterPop } = useWaterPop();
   const { rowRevealKey, dissolvedPads, markDissolved } = useRowRevealDissolve(
@@ -250,6 +333,27 @@ export default function GameBoard() {
     prevIdleRef.current = idleNow;
   }, [isPlaying, level, triggerEntry, bumpSpawnWave]);
 
+  const [highlightRow, setHighlightRow] = useState(null);
+
+  const handleFrogJumpEnd = () => {
+    onFrogJumpEnd();
+    setHighlightRow(frogRow);
+  };
+
+  useEffect(() => {
+    if (isJumping || finishReason === "drop") {
+      setHighlightRow(null);
+    }
+  }, [isJumping, finishReason]);
+
+
+  const symbolToImage = (char, isHighlighted) => {
+    const color = isHighlighted ? "yellow" : "gray";
+
+    if (char === "x") return { src: `/multi_${color}.png`, w: 14, h: 18, dy: 3 };
+    if (char === ".") return { src: `/dot_${color}.png`, w: 6, h: 6, dy: 6 };
+    return { src: `/digits_${color}/${char}.png`, w: 14, h: 18, dy: 0 };
+  };
   // keep overlayFrom consistent with jumps
   useEffect(() => {
     if (isJumping && !overlayFrom) {
@@ -261,6 +365,25 @@ export default function GameBoard() {
   useEffect(() => {
     if (!isJumping) setOverlayFrom(null);
   }, [isJumping]);
+
+  useEffect(() => {
+  const recalc = () => {
+    if (!boardRef.current) return;
+    const br = boardRef.current.getBoundingClientRect();
+    for (const [key, el] of Object.entries(padElemsRef.current)) {
+      if (!el) continue;
+      const er = el.getBoundingClientRect();
+      padCentersRef.current[key] = {
+        x: er.left - br.left + er.width / 2,
+        y: er.top - br.top + er.height / 2,
+      };
+    }
+  };
+  recalc();
+  window.addEventListener("resize", recalc);
+  return () => window.removeEventListener("resize", recalc);
+}, [rowsY]); // при сдвигах строк тоже пересчитываем
+
 
   /* ---------- LOSE overlay (frog_lose_1..8) ---------- */
   const [loseAnim, setLoseAnim] = useState(null); // { x, y, facingDeg }
@@ -288,7 +411,7 @@ export default function GameBoard() {
       {/* ROWS VIEWPORT */}
       <div
         ref={rowsViewportRef}
-        className="absolute inset-x-0 overflow-hidden"
+        className="absolute inset-x-0 overflow-hidden z-[20]" // 👈 добавили z
         style={{ bottom: ROCK_SPACE }}
       >
         {/* Intro sweep */}
@@ -388,8 +511,23 @@ export default function GameBoard() {
                             />
                           )}
                         </div>
-                        <div className="absolute inset-0 grid place-items-center text-[11px] font-extrabold text-black">
-                          x{mult}
+                        <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-10">
+                          {`x${mult.toFixed(2)}`.split("").map((char, idx) => {
+                            const { src, w, h, dy } = symbolToImage(char, highlightRow === rowIndexGlobal);
+                            return (
+                              <img
+                                key={idx}
+                                src={src}
+                                alt={char}
+                                className="object-contain transition-all duration-500 ease-in-out"
+                                style={{
+                                  width: w,
+                                  height: h,
+                                  transform: `translateY(${dy}px) scale(${highlightRow === rowIndexGlobal ? 1.2 : 1})`,
+                                }}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -443,6 +581,8 @@ export default function GameBoard() {
                       return (
                         <button
                           key={col}
+                          data-row={rowIndexGlobal}
+                          data-col={col}
                           onClick={() =>
                             handlePadClick(rowIndexGlobal, col, clickable)
                           }
@@ -668,8 +808,23 @@ export default function GameBoard() {
                               />
                             )}
                           </div>
-                          <div className="absolute inset-0 grid place-items-center text-[11px] font-extrabold text-black">
-                            x{mult}
+                          <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-10">
+                            {`x${mult.toFixed(2)}`.split("").map((char, idx) => {
+                              const { src, w, h, dy } = symbolToImage(char, highlightRow === rowIndexGlobal);
+                              return (
+                                <img
+                                  key={idx}
+                                  src={src}
+                                  alt={char}
+                                  className="object-contain transition-all duration-500 ease-in-out"
+                                  style={{
+                                    width: w,
+                                    height: h,
+                                    transform: `translateY(${dy}px) scale(${highlightRow === rowIndexGlobal ? 1.2 : 1})`,
+                                  }}
+                                />
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -741,7 +896,7 @@ export default function GameBoard() {
             onAnimationComplete={() => {
               if (landedOnceRef.current) return;
               landedOnceRef.current = true;
-              onFrogJumpEnd();
+              handleFrogJumpEnd(); 
             }}
             style={{
               width: FROG_SIZE,
@@ -835,6 +990,16 @@ export default function GameBoard() {
             );
           })()}
         </motion.div>
+      )}
+
+      {showTutorial && (
+        <SwipeTutorial
+          show
+          routes={tutorialRoutes}
+          getTileCenter={getTileCenter}
+          tileRadius={LILY_BTN / 2}
+          onAnyUserAction={() => resetIdle()} // скрыть по действию
+        />
       )}
 
       {/* OVERLAY FROG — LOSE */}
@@ -946,13 +1111,43 @@ export default function GameBoard() {
               <div className="text-7xl opacity-90 text-blue-300 drop-shadow">
                 YOU WON
               </div>
-              <div className="text-2xl font-extrabold mt-1 text-yellow-300 drop-shadow">
-                {format ? format(overlayAmount) : overlayAmount}
+              <div className="flex items-center justify-center gap-1 mt-1 z-50">
+                {`${format ? format(overlayAmount) : overlayAmount}`.split("").map((char, idx) => {
+                  const { src, w, h, dy } = symbolToImage(char, "yellow");
+                  return (
+                    <img
+                      key={idx}
+                      src={src}
+                      alt={char}
+                      className="object-contain drop-shadow"
+                      style={{
+                        width: w,
+                        height: h,
+                        transform: `translateY(${dy}px)`
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>
         </motion.div>
       )}
+      <Swipe
+        active={showTutorial}  // состояние, активен ли туториал
+        routes={tutorialRoutes}
+        getTileCenter={(row, col) => {
+          const pad = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+          if (!pad) return null;
+          const br = boardRef.current.getBoundingClientRect();
+          const rect = pad.getBoundingClientRect();
+          return {
+            x: rect.left - br.left + rect.width / 2,
+            y: rect.top - br.top + rect.height / 2,
+          };  
+        }}
+        onDone={() => console.log("swipe finished")}
+      />
     </div>
   );
 }
