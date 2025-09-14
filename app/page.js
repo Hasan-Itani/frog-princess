@@ -63,12 +63,8 @@ export default function Home() {
           <div className="absolute inset-0 flex items-center justify-center gap-8">
             <div>
               <Water width="300px" height="300px" />
-              <Water width="300px" height="300px" />
-              <Water width="300px" height="300px" />
             </div>
             <div>
-              <Water width="300px" height="300px" />
-              <Water width="300px" height="300px" />
               <Water width="300px" height="300px" />
             </div>
           </div>

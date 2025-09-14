@@ -50,6 +50,7 @@ export default function Controls({ onOpenSettings }) {
 
   useEffect(() => {
     if (unlockedRef.current) return;
+
     const once = () => {
       unlockedRef.current = true;
       unlock("basic_background"); // or "ambience"

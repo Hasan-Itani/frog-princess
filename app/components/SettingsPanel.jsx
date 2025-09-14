@@ -22,6 +22,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
     isMusicMuted,
     setMusicMuted,
     getCurrentMusic,
+    playSfx,
     playMusic,
     // sfx
     getSfxVolume,
@@ -112,7 +113,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                 return (
                   <button
                     key={idx}
-                    onClick={() => setBetTarget(idx)}
+                    onClick={() => {
+                      setBetTarget(idx);
+                      playSfx("button");
+                    }}
                     disabled={isPlaying}
                     className={[
                       "px-3 py-2 rounded-md font-bold border transition",
@@ -167,6 +171,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                     onClick={() => {
                       setBgChoice(opt.key);
                       playMusic(opt.key); // switches instantly
+                      playSfx("button");
                     }}
                   >
                     {opt.label}
@@ -190,6 +195,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                     setMusicMuteUI(next);
                     setMusicMuted(next);
                     setMuted(next); // keep game.muted in sync with MUSIC
+                    playSfx("button");
                   }}
                 >
                   {musicMuteUI ? "Unmute" : "Mute"}
@@ -224,6 +230,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                     const next = !sfxMuteUI;
                     setSfxMuteUI(next);
                     setSfxMuted(next);
+                    playSfx("button");
                   }}
                 >
                   {sfxMuteUI ? "Unmute" : "Mute"}
@@ -259,7 +266,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/cash_hover.png"
           activeIcon="/cash_selected.png"
           isActive={activeTab === "bet"}
-          onClick={() => setActiveTab("bet")}
+          onClick={() => {
+            setActiveTab("bet");
+            playSfx("button");
+          }}
           alt="Cash"
         />
         <IconButton
@@ -268,7 +278,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/info_hover.png"
           activeIcon="/info_selected.png"
           isActive={activeTab === "rules"}
-          onClick={() => setActiveTab("rules")}
+          onClick={() => {
+            setActiveTab("rules");
+            playSfx("button");
+          }}
           alt="Info"
         />
         <IconButton
@@ -277,7 +290,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/settings_hover.png"
           activeIcon="/settings_selected.png"
           isActive={activeTab === "settings"}
-          onClick={() => setActiveTab("settings")}
+          onClick={() => {
+            setActiveTab("settings");
+            playSfx("button");
+          }}
           alt="Settings"
         />
         <IconButton
@@ -286,7 +302,10 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           hoverIcon="/close_hover.png"
           activeIcon="/close_hover.png"
           isActive={false}
-          onClick={handleClose}
+          onClick={() => {
+            handleClose();
+            playSfx("button");
+          }}
           alt="Close"
         />
       </div>
