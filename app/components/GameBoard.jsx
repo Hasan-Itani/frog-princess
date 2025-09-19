@@ -11,6 +11,8 @@ import useBoard from "../hooks/useBoard";
 import FlipbookImage from "./FlipbookImage";
 import FrogSprite from "./animations/FrogSprite";
 
+import useAudio from "../hooks/useAudio";
+
 import useSpawnWave from "../hooks/useSpawnWave";
 import useWaterPop from "../hooks/useWaterPop";
 import useRowRevealDissolve from "../hooks/useRowRevealDissolve";
@@ -120,6 +122,7 @@ function GoldStatic({ size }) {
 export default function GameBoard() {
   const { format, finishReason, isPlaying, level } = useGame();
   const { showDrops } = useDebug();
+  const { playSfx } = useAudio();
   const IDLE_MS = 20000;
   const tutorialRoutes = [
     [
@@ -246,6 +249,8 @@ export default function GameBoard() {
   // show → 3s breathe → fade out → dismiss
   useEffect(() => {
     if (!showWinOverlay) return;
+
+    playSfx("popup_win");
 
     setWinDismissed(false);
 
@@ -424,10 +429,15 @@ export default function GameBoard() {
     if (finishReason === "drop") {
       const c = captureCurrentPerchCenter();
       if (c) setLoseAnim({ x: c.x, y: c.y, facingDeg: frogFacingDeg });
+
+      // проигрываем случайный "frog_1..4"
+      const n = Math.floor(Math.random() * 4) + 1; // 1..4
+      playSfx(`frog_${n}`);
     } else {
       setLoseAnim(null);
     }
-  }, [finishReason, frogFacingDeg, captureCurrentPerchCenter]);
+  }, [finishReason, frogFacingDeg, captureCurrentPerchCenter, playSfx]);
+
 
   const overlayFrogActiveForRock = isJumping || Boolean(entry);
   // Hide pad frog while jumping, egressing, not playing, losing, OR winning (so wipe shows)
