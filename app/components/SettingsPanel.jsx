@@ -145,7 +145,6 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
 
         {activeTab === "settings" && (
           <div className="w-full max-w-[520px] mx-auto space-y-6">
-            <PartTitle>SETTINGS</PartTitle>
             <TinyMuted>
               Music and sound effects are controlled separately.
             </TinyMuted>

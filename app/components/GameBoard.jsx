@@ -122,50 +122,44 @@ function GoldStatic({ size }) {
 export default function GameBoard() {
   const { format, finishReason, isPlaying, level } = useGame();
   const { showDrops } = useDebug();
+
+  // ====== AUDIO ======
   const { playSfx } = useAudio();
+  const playRandom = (base, count) =>
+    playSfx(`${base}_${Math.floor(Math.random() * count)}`);
+
+  // ====== LOSS SEQUENCE STATE (to gate restart) ======
+  const [lossSeq, setLossSeq] = useState({
+    active: false,
+    row: null,
+    col: null,
+    disappearDone: false, // becomes true right after we play lilly_disappear
+  });
+  const lossTimerRef = useRef(null);
+
+  // tutorial
   const IDLE_MS = 20000;
   const tutorialRoutes = [
     [
       { row: 0, col: 0 },
       { row: 1, col: 1 },
-      { row: 2, col: 2 },
-      { row: 3, col: 3 },
-      { row: 4, col: 4 },
+      { row: 2, col: 1 },
+      { row: 3, col: 2 },
+      { row: 4, col: 3 },
+    ],
+    [
+      { row: 0, col: 2 },
+      { row: 1, col: 3 },
+      { row: 2, col: 3 },
+      { row: 3, col: 4 },
+      { row: 4, col: 3 },
     ],
     [
       { row: 0, col: 4 },
       { row: 1, col: 3 },
-      { row: 2, col: 4 },
+      { row: 2, col: 2 },
       { row: 3, col: 3 },
       { row: 4, col: 2 },
-    ],
-    [
-      { row: 0, col: 2 },
-      { row: 1, col: 2 },
-      { row: 2, col: 2 },
-      { row: 3, col: 2 },
-      { row: 4, col: 2 },
-    ],
-    [
-      { row: 4, col: 0 },
-      { row: 4, col: 1 },
-      { row: 4, col: 2 },
-      { row: 4, col: 3 },
-      { row: 4, col: 4 },
-    ],
-    [
-      { row: 0, col: 0 },
-      { row: 0, col: 1 },
-      { row: 0, col: 2 },
-      { row: 1, col: 2 },
-      { row: 2, col: 2 },
-    ],
-    [
-      { row: 0, col: 0 },
-      { row: 1, col: 0 },
-      { row: 1, col: 1 },
-      { row: 2, col: 1 },
-      { row: 2, col: 2 },
     ],
   ];
 
@@ -191,6 +185,7 @@ export default function GameBoard() {
       window.removeEventListener("touchstart", handler);
     };
   }, []);
+
   const {
     visibleIndices,
     rowOpacity,
@@ -211,30 +206,6 @@ export default function GameBoard() {
   } = useBoard();
 
   /* ---------- hooks: spawn / water-pop / dissolve ---------- */
-  // === центры/элементы тайлов для туториала (JS без типов)
-  const padElemsRef = useRef({});
-  const padCentersRef = useRef({});
-
-  // обёртка над исходным setPadRef из usePerchOverlay
-  const setPadRefWithCenter = (row, col) => (el) => {
-    // пробрасываем в оригинальный реф
-    setPadRef(row, col)(el);
-
-    padElemsRef.current[`${row}:${col}`] = el;
-
-    // сразу считаем центр тайла в координатах GameBoard
-    if (el && boardRef.current) {
-      const br = boardRef.current.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      padCentersRef.current[`${row}:${col}`] = {
-        x: er.left - br.left + er.width / 2,
-        y: er.top - br.top + er.height / 2,
-      };
-    }
-  };
-
-  // геттер центра для SwipeTutorial
-  const getTileCenter = (row, col) => padCentersRef.current[`${row}:${col}`];
   const { spawnWaveKey, bumpSpawnWave } = useSpawnWave();
   const { getWaterPopKey, bumpWaterPop } = useWaterPop();
   const { rowRevealKey, dissolvedPads, markDissolved } = useRowRevealDissolve(
@@ -242,11 +213,11 @@ export default function GameBoard() {
     shouldRevealRow,
     spawnWaveKey
   );
+
   // smooth show → 3s breathe → slight shrink → fade out → dismiss
   const overlayCtrl = useAnimationControls();
   const [winDismissed, setWinDismissed] = useState(false);
 
-  // show → 3s breathe → fade out → dismiss
   useEffect(() => {
     if (!showWinOverlay) return;
 
@@ -266,9 +237,9 @@ export default function GameBoard() {
       await overlayCtrl.start({
         scale: [1.0, 1.03, 1.0, 1.03, 1.0],
         transition: {
-          duration: 3.0, // total breathe time
+          duration: 3.0,
           ease: "easeInOut",
-          times: [0, 0.25, 0.5, 0.75, 1], // smooth pacing
+          times: [0, 0.25, 0.5, 0.75, 1],
         },
       });
 
@@ -280,12 +251,11 @@ export default function GameBoard() {
 
       setWinDismissed(true);
     })();
-  }, [showWinOverlay, overlayCtrl]);
+  }, [showWinOverlay, overlayCtrl, playSfx]);
 
   /* ---------- NEW: Global Wipe when winning ---------- */
   const [winWipeKey, setWinWipeKey] = useState(0);
   useEffect(() => {
-    // Trigger wipe when the win overlay shows (collect or x1500).
     if (showWinOverlay) setWinWipeKey((k) => k + 1);
   }, [showWinOverlay]);
 
@@ -339,9 +309,11 @@ export default function GameBoard() {
   const [overlayFrom, setOverlayFrom] = useState(null);
   const landedOnceRef = useRef(false);
 
+  // CLICK → lilly_click
   const handlePadClick = (row, col, clickable) => {
     if (!clickable) return;
-    bumpWaterPop(row, col); // water-pop under clicked pad
+    bumpWaterPop(row, col);
+    playSfx("lilly_click"); // CLICK SFX
 
     landedOnceRef.current = false;
     const from = captureCurrentPerchCenter();
@@ -361,16 +333,22 @@ export default function GameBoard() {
   });
 
   // idle → start of round: if intro already ended, trigger entry & spawn
+  // (but NEVER while a loss sequence is active)
   const prevIdleRef = useRef(false);
   useEffect(() => {
     const idleNow = !isPlaying && level === 0;
     const wasIdle = prevIdleRef.current;
-    if (!suppressEntryUntilIntroDone.current && idleNow && !wasIdle) {
+    if (
+      !suppressEntryUntilIntroDone.current &&
+      idleNow &&
+      !wasIdle &&
+      !lossSeq.active
+    ) {
       bumpSpawnWave();
       triggerEntry();
     }
     prevIdleRef.current = idleNow;
-  }, [isPlaying, level, triggerEntry, bumpSpawnWave]);
+  }, [isPlaying, level, triggerEntry, bumpSpawnWave, lossSeq.active]);
 
   const [highlightRow, setHighlightRow] = useState(null);
 
@@ -393,6 +371,7 @@ export default function GameBoard() {
     if (char === ".") return { src: `/dot_${color}.png`, w: 6, h: 6, dy: 6 };
     return { src: `/digits_${color}/${char}.png`, w: 14, h: 18, dy: 0 };
   };
+
   // keep overlayFrom consistent with jumps
   useEffect(() => {
     if (isJumping && !overlayFrom) {
@@ -405,23 +384,60 @@ export default function GameBoard() {
     if (!isJumping) setOverlayFrom(null);
   }, [isJumping]);
 
+  // ===== ENTRY: play lilly_appear + random frog_0..4
   useEffect(() => {
-    const recalc = () => {
-      if (!boardRef.current) return;
-      const br = boardRef.current.getBoundingClientRect();
-      for (const [key, el] of Object.entries(padElemsRef.current)) {
-        if (!el) continue;
-        const er = el.getBoundingClientRect();
-        padCentersRef.current[key] = {
-          x: er.left - br.left + er.width / 2,
-          y: er.top - br.top + er.height / 2,
-        };
-      }
-    };
-    recalc();
-    window.addEventListener("resize", recalc);
-    return () => window.removeEventListener("resize", recalc);
-  }, [rowsY]); // при сдвигах строк тоже пересчитываем
+    if (entry) {
+      playSfx("lilly_appear");
+      playRandom("frog", 5);
+    }
+  }, [entry]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ===== EGRESS (collect / finish): random frog_0..4
+  useEffect(() => {
+    if (egress) playRandom("frog", 5);
+  }, [egress]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ======= LOSS: click → drown → disappear → wait flipbook → restart =======
+  // 1) Detect entering DROP state and kick off audio sequencing
+  const prevFinishRef = useRef(finishReason);
+  useEffect(() => {
+    if (finishReason === "drop" && prevFinishRef.current !== "drop") {
+      // stash the exact pad that killed us
+      const r = frogRow;
+      const c = frogCol;
+
+      // Activate loss sequence gating restart
+      setLossSeq({ active: true, row: r, col: c, disappearDone: false });
+
+      // Play drown immediately
+      playRandom("frog_drown", 3);
+
+      // After a short beat, play lily disappear (must be AFTER drown)
+      clearTimeout(lossTimerRef.current);
+      lossTimerRef.current = setTimeout(() => {
+        setLossSeq((s) => ({ ...s, disappearDone: true }));
+      }, 600); // a hair longer than one flipbook step (~24fps)
+    }
+    prevFinishRef.current = finishReason;
+    return () => clearTimeout(lossTimerRef.current);
+  }, [finishReason, frogRow, frogCol]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 2) Only when the *trap tile* finished dissolving AND disappear sound fired → restart
+  useEffect(() => {
+    if (!lossSeq.active) return;
+    const key =
+      lossSeq.row != null && lossSeq.col != null
+        ? `${lossSeq.row}:${lossSeq.col}`
+        : null;
+
+    if (key && lossSeq.disappearDone && dissolvedPads[key]) {
+      // Now it's safe to refresh the board and re-enter
+      bumpSpawnWave();
+      triggerEntry();
+      // reset loss sequence gate
+      setLossSeq({ active: false, row: null, col: null, disappearDone: false });
+    }
+  }, [lossSeq, dissolvedPads, bumpSpawnWave, triggerEntry]);
 
   /* ---------- LOSE overlay (frog_lose_1..8) ---------- */
   const [loseAnim, setLoseAnim] = useState(null); // { x, y, facingDeg }
@@ -429,15 +445,10 @@ export default function GameBoard() {
     if (finishReason === "drop") {
       const c = captureCurrentPerchCenter();
       if (c) setLoseAnim({ x: c.x, y: c.y, facingDeg: frogFacingDeg });
-
-      // проигрываем случайный "frog_1..4"
-      const n = Math.floor(Math.random() * 4) + 1; // 1..4
-      playSfx(`frog_${n}`);
     } else {
       setLoseAnim(null);
     }
-  }, [finishReason, frogFacingDeg, captureCurrentPerchCenter, playSfx]);
-
+  }, [finishReason, frogFacingDeg, captureCurrentPerchCenter]);
 
   const overlayFrogActiveForRock = isJumping || Boolean(entry);
   // Hide pad frog while jumping, egressing, not playing, losing, OR winning (so wipe shows)
@@ -454,14 +465,17 @@ export default function GameBoard() {
       {/* ROWS VIEWPORT */}
       <div
         ref={rowsViewportRef}
-        className="absolute inset-x-0 overflow-hidden z-[20]" // 👈 добавили z
+        className="absolute inset-x-0 overflow-hidden z-[20]"
         style={{ bottom: ROCK_SPACE }}
       >
         {/* Intro sweep */}
         {introActive && (
           <motion.div style={{ y: introY }}>
             <div className="flex flex-col" style={{ gap: ROW_GAP }}>
-              {allIndicesDesc.map((rowIndexGlobal) => {
+              {Array.from(
+                { length: MULTIPLIERS.length },
+                (_, i) => MULTIPLIERS.length - 1 - i
+              ).map((rowIndexGlobal) => {
                 const mult = MULTIPLIERS[rowIndexGlobal];
                 const rots = rotationsForRow(rowIndexGlobal);
                 const traps = getTraps(rowIndexGlobal);
@@ -558,7 +572,7 @@ export default function GameBoard() {
                           {`x${mult.toFixed(2)}`.split("").map((char, idx) => {
                             const { src, w, h, dy } = symbolToImage(
                               char,
-                              highlightRow === rowIndexGlobal
+                              false
                             );
                             return (
                               <img
@@ -569,9 +583,7 @@ export default function GameBoard() {
                                 style={{
                                   width: w,
                                   height: h,
-                                  transform: `translateY(${dy}px) scale(${
-                                    highlightRow === rowIndexGlobal ? 1.2 : 1
-                                  })`,
+                                  transform: `translateY(${dy}px)`,
                                 }}
                               />
                             );
@@ -594,7 +606,6 @@ export default function GameBoard() {
               const rots = rotationsForRow(rowIndexGlobal);
               const traps = getTraps(rowIndexGlobal);
               const revealThisRow = shouldRevealRow(rowIndexGlobal);
-              const isFinalRow = rowIndexGlobal === MULTIPLIERS.length - 1;
 
               return (
                 <div
@@ -655,7 +666,7 @@ export default function GameBoard() {
                                 kind="waterpop"
                                 count={11}
                                 size={LILY_IMG}
-                                direction="forward" // 1..11
+                                direction="forward"
                                 fps={28}
                                 alt=""
                               />
@@ -689,6 +700,7 @@ export default function GameBoard() {
                                 />
                               ) : (
                                 <FlipbookImage
+                              
                                   key={`wipe-${winWipeKey}-row${rowIndexGlobal}-col${col}-${
                                     rowRevealKey[rowIndexGlobal] || 0
                                   }`}
@@ -697,7 +709,7 @@ export default function GameBoard() {
                                   start={1}
                                   end={10}
                                   size={LILY_IMG}
-                                  direction="forward" // 1 → 10
+                                  direction="forward"
                                   fps={24}
                                   onDone={() =>
                                     markDissolved(rowIndexGlobal, col)
@@ -783,7 +795,6 @@ export default function GameBoard() {
                       const keyStr = `${rowIndexGlobal}:-1`;
 
                       if (doWinWipe && !dissolvedPads[keyStr]) {
-                        // wipe the badge too (lilly/gold flipbook forward then hide)
                         return (
                           <FlipbookImage
                             key={`wipe-badge-${winWipeKey}-${rowIndexGlobal}`}
@@ -792,11 +803,7 @@ export default function GameBoard() {
                                 ? "gold"
                                 : "lilly"
                             }
-                            count={
-                              rowIndexGlobal === MULTIPLIERS.length - 1
-                                ? 11
-                                : 11
-                            }
+                            count={11}
                             start={1}
                             end={11}
                             size={BADGE_W}
@@ -953,6 +960,8 @@ export default function GameBoard() {
             onAnimationComplete={() => {
               if (landedOnceRef.current) return;
               landedOnceRef.current = true;
+              // LAND: land_0..4
+              playRandom("land", 5);
               handleFrogJumpEnd();
             }}
             style={{
@@ -1053,9 +1062,20 @@ export default function GameBoard() {
         <SwipeTutorial
           show
           routes={tutorialRoutes}
-          getTileCenter={getTileCenter}
+          getTileCenter={(row, col) => {
+            const pad = document.querySelector(
+              `[data-row="${row}"][data-col="${col}"]`
+            );
+            if (!pad || !boardRef.current) return null;
+            const br = boardRef.current.getBoundingClientRect();
+            const rect = pad.getBoundingClientRect();
+            return {
+              x: rect.left - br.left + rect.width / 2,
+              y: rect.top - br.top + rect.height / 2,
+            };
+          }}
           tileRadius={LILY_BTN / 2}
-          onAnyUserAction={() => resetIdle()} // скрыть по действию
+          onAnyUserAction={() => resetIdle()}
         />
       )}
 
@@ -1192,14 +1212,15 @@ export default function GameBoard() {
           </div>
         </motion.div>
       )}
+
       <Swipe
-        active={showTutorial} // состояние, активен ли туториал
+        active={showTutorial}
         routes={tutorialRoutes}
         getTileCenter={(row, col) => {
           const pad = document.querySelector(
             `[data-row="${row}"][data-col="${col}"]`
           );
-          if (!pad) return null;
+          if (!pad || !boardRef.current) return null;
           const br = boardRef.current.getBoundingClientRect();
           const rect = pad.getBoundingClientRect();
           return {

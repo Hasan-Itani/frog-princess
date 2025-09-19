@@ -64,7 +64,7 @@ function createManager() {
   let musicTrack = null;         // 'ambience' | 'basic_background' | null
   let musicShouldLoop = false;
   let musicMuted = false;
-  let musicVolume = 0.7;
+  let musicVolume = 0.1;
 
   const LOOP_MARGIN = 0.035; // safety to avoid decoder edge pops
 

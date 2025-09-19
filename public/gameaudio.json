@@ -6,83 +6,83 @@
       "loop": false
     },
     "ball_crack_high": {
-      "start": 40,
-      "end": 40.421950113378685,
+      "start": 39.5,
+      "end": 40.0,
       "loop": false
     },
     "ball_crack_low": {
-      "start": 42,
-      "end": 42.43637188208617,
+      "start": 41.5,
+      "end": 42.4,
       "loop": false
     },
     "ball_crack_middle": {
-      "start": 44,
-      "end": 44.281995464852606,
+      "start": 43.5,
+      "end": 44.0,
       "loop": false
     },
     "ball_spin_end": {
-      "start": 46,
-      "end": 46.64616780045351,
+      "start": 45.5,
+      "end": 46.6,
       "loop": false
     },
     "ball_spin_loop": {
-      "start": 48,
-      "end": 49.1936507936508,
+      "start": 47.5,
+      "end": 49.0,
       "loop": false
     },
     "ball_spin_stop": {
-      "start": 51,
-      "end": 51.265578231292515,
+      "start": 54.1,
+      "end": 54.5,
       "loop": false
     },
     "basic_background": {
-      "start": 54.8,
-      "end": 94.14285714285714,
+      "start": 54.6,
+      "end": 94.5,
       "loop": true
     },
     "bell": {
-      "start": 96,
-      "end": 97.5663492063492,
+      "start":  95.9,
+      "end": 98.0,
       "loop": false
     },
     "big_win_end": {
-      "start": 99,
-      "end": 99.74303854875284,
+      "start": 99.0,
+      "end": 101.0,
       "loop": false
     },
     "big_win": {
-      "start": 101,
-      "end": 103.21609977324263,
+      "start": 101.0,
+      "end": 104.0,
       "loop": false
     },
     "button": {
-      "start": 106,
+      "start": 106.0,
       "end": 106.20503401360544,
       "loop": false
     },
     "collect": {
-      "start": 107,
-      "end": 107.96403628117913,
+      "start": 107.0,
+      "end": 107.4,
       "loop": false
     },
     "counter_end": {
-      "start": 109,
-      "end": 111.60802721088436,
+      "start": 109.2,
+      "end": 111.0,
       "loop": false
     },
     "counter": {
       "start": 113,
-      "end": 114.02167800453515,
+      "end": 115.0,
       "loop": false
     },
     "frog_0": {
       "start": 116,
-      "end": 116.81201814058957,
+      "end": 118.0,
       "loop": false
     },
     "frog_1": {
       "start": 118,
-      "end": 118.35333333333334,
+      "end": 118.81201814058957,
       "loop": false
     },
     "frog_2": {
@@ -101,17 +101,17 @@
       "loop": false
     },
     "frog_drown_0": {
-      "start": 130,
+      "start": 128.5,
       "end": 130.9693424036281,
       "loop": false
     },
     "frog_drown_1": {
-      "start": 132,
+      "start": 131,
       "end": 132.95736961451246,
       "loop": false
     },
     "frog_drown_2": {
-      "start": 134,
+      "start": 133,
       "end": 134.95868480725625,
       "loop": false
     },
@@ -182,32 +182,32 @@
     },
     "land_0": {
       "start": 175,
-      "end": 175.59868480725623,
+      "end": 176.59868480725623,
       "loop": false
     },
     "land_1": {
       "start": 177,
-      "end": 177.59868480725623,
+      "end": 178.59868480725623,
       "loop": false
     },
     "land_2": {
       "start": 179,
-      "end": 179.5960090702948,
+      "end": 180.5960090702948,
       "loop": false
     },
     "land_3": {
       "start": 181,
-      "end": 181.5960090702948,
+      "end": 182.5960090702948,
       "loop": false
     },
     "land_4": {
       "start": 183,
-      "end": 184.65600907029477,
+      "end": 185.65600907029477,
       "loop": false
     },
     "lilly_appear": {
       "start": 186,
-      "end": 187,
+      "end": 189.2,
       "loop": false
     },
     "lilly_click": {
@@ -217,7 +217,7 @@
     },
     "lilly_disappear": {
       "start": 191,
-      "end": 192.1875283446712,
+      "end": 193.1875283446712,
       "loop": false
     },
     "lilly_spin": {
