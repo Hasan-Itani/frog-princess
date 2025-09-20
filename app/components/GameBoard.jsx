@@ -3,15 +3,13 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useAnimationControls } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { useGame, MULTIPLIERS } from "../hooks/useGame";
 import { useDebug } from "../hooks/useDebug";
 import useBoard from "../hooks/useBoard";
 import FlipbookImage from "./FlipbookImage";
 import FrogSprite from "./animations/FrogSprite";
-
-import useAudio from "../hooks/useAudio";
 
 import useSpawnWave from "../hooks/useSpawnWave";
 import useWaterPop from "../hooks/useWaterPop";
@@ -20,8 +18,6 @@ import useRowsSlide from "../hooks/useRowsSlide";
 import usePerchOverlay from "../hooks/usePerchOverlay";
 import useIntroSweep from "../hooks/useIntroSweep";
 import useEgressEntry from "../hooks/useEgressEntry";
-import SwipeTutorial from "./Tutorial/SwipeTutorial";
-import Swipe from "./animations/Swipe";
 
 import {
   PADS_PER_ROW,
@@ -35,157 +31,26 @@ import {
   ROW_STRIDE,
   FROG_SIZE,
   ROCK_IMG,
-  ROCK_FROG_Y_OFFSET,
-  ROCK_FROG_X_OFFSET,
   floatParams,
   rotationsForRow,
 } from "../hooks/useBoardVisuals";
 
-/* ---------------- Frog lose flipbook (frog_lose_1..8) ---------------- */
-function FrogLoseFlipbook({ size = 70, facingDeg = 0, fps = 20, onDone }) {
-  const [frame, setFrame] = useState(1); // 1..8
-  useEffect(() => {
-    let f = 1;
-    const id = setInterval(() => {
-      f += 1;
-      if (f > 8) {
-        clearInterval(id);
-        onDone?.();
-      } else {
-        setFrame(f);
-      }
-    }, Math.max(16, 1000 / fps));
-    return () => clearInterval(id);
-  }, [fps, onDone]);
-
-  return (
-    <div
-      className="w-full h-full grid place-items-center"
-      style={{ rotate: `${facingDeg}deg` }}
-    >
-      <img
-        src={`/frog_lose_${frame}.png`}
-        alt=""
-        width={size}
-        height={size}
-        className="select-none pointer-events-none block"
-        draggable={false}
-      />
-    </div>
-  );
-}
-
-function MultiplierImages({ mult }) {
-  const str = mult.toString();
-  return (
-    <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-[20]">
-      {str.split("").map((ch, i) => {
-        let src;
-        if (ch === "x" || ch === "X") src = "/multi_gray.png";
-        else if (ch === ".") src = "/dot_gray.png";
-        else src = `/${ch}.png`; // 0.png .. 9.png
-
-        return (
-          <img
-            key={i}
-            src={src}
-            alt={ch}
-            className="w-[11px] h-auto select-none pointer-events-none"
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-/* Fallback gold lily if Next/Image fails */
-function GoldStatic({ size }) {
-  const [srcs, setSrcs] = useState([
-    "/gold_lilly.png",
-    "/gold_lily.png",
-    "/gold_lilly_1.png",
-    "/gold_lily_1.png",
-  ]);
-  const src = srcs[0] ?? "/lilly_1.png";
-  return (
-    <Image
-      src={src}
-      alt=""
-      width={size}
-      height={size}
-      className="pointer-events-none"
-      onError={() => setSrcs((arr) => (arr.length > 1 ? arr.slice(1) : arr))}
-    />
-  );
-}
+import GoldStatic from "./atoms/GoldStatic";
+import NumberGlyphs, { symbolToImage } from "./atoms/NumberGlyphs";
+import useWinOverlayAnimation from "../hooks/board/useWinOverlayAnimation";
+import useWinWipe from "../hooks/board/useWinWipe";
+import useOverlayFromSync from "../hooks/board/useOverlayFromSync";
+import useEntryEgressSfx from "../hooks/board/useEntryEgressSfx";
+import useLossSequence from "../hooks/board/useLossSequence";
+import useEntryOnIdle from "../hooks/board/useEntryOnIdle";
+import useAudioRandom from "../hooks/audio/useAudioRandom";
+import FrogLoseFlipbook from "./flipbooks/FrogLoseFlipbook";
 
 export default function GameBoard() {
   const { format, finishReason, isPlaying, level } = useGame();
   const { showDrops } = useDebug();
 
-  // ====== AUDIO ======
-  const { playSfx } = useAudio();
-  const playRandom = (base, count) =>
-    playSfx(`${base}_${Math.floor(Math.random() * count)}`);
-
-  // ====== LOSS SEQUENCE STATE (to gate restart) ======
-  const [lossSeq, setLossSeq] = useState({
-    active: false,
-    row: null,
-    col: null,
-    disappearDone: false, // becomes true right after we play lilly_disappear
-  });
-  const lossTimerRef = useRef(null);
-
-  // tutorial
-  const IDLE_MS = 20000;
-  const tutorialRoutes = [
-    [
-      { row: 0, col: 0 },
-      { row: 1, col: 1 },
-      { row: 2, col: 1 },
-      { row: 3, col: 2 },
-      { row: 4, col: 3 },
-    ],
-    [
-      { row: 0, col: 2 },
-      { row: 1, col: 3 },
-      { row: 2, col: 3 },
-      { row: 3, col: 4 },
-      { row: 4, col: 3 },
-    ],
-    [
-      { row: 0, col: 4 },
-      { row: 1, col: 3 },
-      { row: 2, col: 2 },
-      { row: 3, col: 3 },
-      { row: 4, col: 2 },
-    ],
-  ];
-
-  const [showTutorial, setShowTutorial] = useState(false);
-  const idleTimer = useRef(null);
-
-  const resetIdle = () => {
-    setShowTutorial(false);
-    clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => setShowTutorial(true), IDLE_MS);
-  };
-
-  useEffect(() => {
-    resetIdle();
-    const handler = () => resetIdle();
-    window.addEventListener("pointerdown", handler, { passive: true });
-    window.addEventListener("keydown", handler);
-    window.addEventListener("touchstart", handler, { passive: true });
-    return () => {
-      clearTimeout(idleTimer.current);
-      window.removeEventListener("pointerdown", handler);
-      window.removeEventListener("keydown", handler);
-      window.removeEventListener("touchstart", handler);
-    };
-  }, []);
-
+  // Board state/logic
   const {
     visibleIndices,
     rowOpacity,
@@ -194,18 +59,16 @@ export default function GameBoard() {
     isRowClickable,
     onPadClick,
     onFrogJumpEnd,
-
     frogRow,
     frogCol,
     frogFacingDeg,
     frogPhase,
-
     isJumping,
     showWinOverlay,
     overlayAmount,
   } = useBoard();
 
-  /* ---------- hooks: spawn / water-pop / dissolve ---------- */
+  // spawn / water-pop / dissolve
   const { spawnWaveKey, bumpSpawnWave } = useSpawnWave();
   const { getWaterPopKey, bumpWaterPop } = useWaterPop();
   const { rowRevealKey, dissolvedPads, markDissolved } = useRowRevealDissolve(
@@ -214,52 +77,7 @@ export default function GameBoard() {
     spawnWaveKey
   );
 
-  // smooth show → 3s breathe → slight shrink → fade out → dismiss
-  const overlayCtrl = useAnimationControls();
-  const [winDismissed, setWinDismissed] = useState(false);
-
-  useEffect(() => {
-    if (!showWinOverlay) return;
-
-    playSfx("popup_win");
-
-    setWinDismissed(false);
-
-    (async () => {
-      // start invisible, then quick fade-in
-      overlayCtrl.set({ scale: 1, opacity: 0 });
-      await overlayCtrl.start({
-        opacity: 1,
-        transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
-      });
-
-      // EXACT 3s of gentle breathing (two subtle swells)
-      await overlayCtrl.start({
-        scale: [1.0, 1.03, 1.0, 1.03, 1.0],
-        transition: {
-          duration: 3.0,
-          ease: "easeInOut",
-          times: [0, 0.25, 0.5, 0.75, 1],
-        },
-      });
-
-      // Immediately fade out after breathing finishes
-      await overlayCtrl.start({
-        opacity: 0,
-        transition: { duration: 0.6, ease: "easeOut" },
-      });
-
-      setWinDismissed(true);
-    })();
-  }, [showWinOverlay, overlayCtrl, playSfx]);
-
-  /* ---------- NEW: Global Wipe when winning ---------- */
-  const [winWipeKey, setWinWipeKey] = useState(0);
-  useEffect(() => {
-    if (showWinOverlay) setWinWipeKey((k) => k + 1);
-  }, [showWinOverlay]);
-
-  /* ---------- hooks: perch & rows slide ---------- */
+  // perch & rows slide
   const {
     boardRef,
     rowsViewportRef,
@@ -274,7 +92,7 @@ export default function GameBoard() {
     frogRow,
     frogCol,
     isJumping,
-    rockOffsets: { xOffset: ROCK_FROG_X_OFFSET, yOffset: ROCK_FROG_Y_OFFSET },
+    rockOffsets: { xOffset: 0, yOffset: -8 },
   });
 
   const { renderedIndices, rowsY } = useRowsSlide(
@@ -283,16 +101,7 @@ export default function GameBoard() {
     onRowsShift
   );
 
-  /* ---------- intro sweep ---------- */
-  const allIndicesDesc = useMemo(
-    () =>
-      Array.from(
-        { length: MULTIPLIERS.length },
-        (_, i) => MULTIPLIERS.length - 1 - i
-      ),
-    []
-  );
-
+  // intro sweep (onEnd triggers first entry)
   const suppressEntryUntilIntroDone = useRef(true);
   const { introActive, introY } = useIntroSweep(
     rowsViewportRef,
@@ -305,23 +114,7 @@ export default function GameBoard() {
     }
   );
 
-  /* ---------- overlay states ---------- */
-  const [overlayFrom, setOverlayFrom] = useState(null);
-  const landedOnceRef = useRef(false);
-
-  // CLICK → lilly_click
-  const handlePadClick = (row, col, clickable) => {
-    if (!clickable) return;
-    bumpWaterPop(row, col);
-    playSfx("lilly_click"); // CLICK SFX
-
-    landedOnceRef.current = false;
-    const from = captureCurrentPerchCenter();
-    if (from) setOverlayFrom(from);
-    onPadClick(row, col);
-  };
-
-  /* ---------- egress / entry ---------- */
+  // egress / entry
   const { egress, setEgress, entry, setEntry, triggerEntry } = useEgressEntry({
     finishReason,
     frogCol,
@@ -332,126 +125,74 @@ export default function GameBoard() {
     frogSize: FROG_SIZE,
   });
 
-  // idle → start of round: if intro already ended, trigger entry & spawn
-  // (but NEVER while a loss sequence is active)
-  const prevIdleRef = useRef(false);
-  useEffect(() => {
-    const idleNow = !isPlaying && level === 0;
-    const wasIdle = prevIdleRef.current;
-    if (
-      !suppressEntryUntilIntroDone.current &&
-      idleNow &&
-      !wasIdle &&
-      !lossSeq.active
-    ) {
-      bumpSpawnWave();
-      triggerEntry();
-    }
-    prevIdleRef.current = idleNow;
-  }, [isPlaying, level, triggerEntry, bumpSpawnWave, lossSeq.active]);
+  // helpers
+  const { playRandom, playSfx } = useAudioRandom();
 
+  // overlay-from sync for jump overlay
+  const { overlayFrom, setOverlayFrom } = useOverlayFromSync({
+    isJumping,
+    captureCurrentPerchCenter,
+  });
+
+  // entry SFX & egress SFX
+  useEntryEgressSfx({ entry, egress });
+
+  // start spawn+entry when becoming idle (post-intro)
+  useEntryOnIdle({
+    isPlaying,
+    level,
+    suppressUntilIntroDoneRef: suppressEntryUntilIntroDone,
+    lossActive: false, // loss gate handled in useLossSequence
+    bumpSpawnWave,
+    triggerEntry,
+  });
+
+  // win overlay anim & wipe key
+  const { overlayCtrl, winDismissed } = useWinOverlayAnimation(showWinOverlay);
+  const winWipeKey = useWinWipe(showWinOverlay);
+
+  // pad click: SFX + overlayFrom capture + board handler
+  const handlePadClick = (row, col, clickable) => {
+    if (!clickable) return;
+    bumpWaterPop(row, col);
+    playSfx?.("lilly_click");
+    const from = captureCurrentPerchCenter?.();
+    if (from) setOverlayFrom(from);
+    onPadClick(row, col);
+  };
+
+  // highlight a row right after landing
   const [highlightRow, setHighlightRow] = useState(null);
-
-  const handleFrogJumpEnd = () => {
+  const handleFrogJumpEndLocal = () => {
     onFrogJumpEnd();
     setHighlightRow(frogRow);
   };
-
   useEffect(() => {
-    if (isJumping || finishReason === "drop") {
-      setHighlightRow(null);
-    }
+    if (isJumping || finishReason === "drop") setHighlightRow(null);
   }, [isJumping, finishReason]);
 
-  const symbolToImage = (char, isHighlighted) => {
-    const color = isHighlighted ? "yellow" : "gray";
-
-    if (char === "x")
-      return { src: `/multi_${color}.png`, w: 14, h: 18, dy: 3 };
-    if (char === ".") return { src: `/dot_${color}.png`, w: 6, h: 6, dy: 6 };
-    return { src: `/digits_${color}/${char}.png`, w: 14, h: 18, dy: 0 };
-  };
-
-  // keep overlayFrom consistent with jumps
-  useEffect(() => {
-    if (isJumping && !overlayFrom) {
-      const from = captureCurrentPerchCenter();
-      if (from) setOverlayFrom(from);
-    }
-  }, [isJumping]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!isJumping) setOverlayFrom(null);
-  }, [isJumping]);
-
-  // ===== ENTRY: play lilly_appear + random frog_0..4
-  useEffect(() => {
-    if (entry) {
-      playSfx("lilly_appear");
-      playRandom("frog", 5);
-    }
-  }, [entry]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ===== EGRESS (collect / finish): random frog_0..4
-  useEffect(() => {
-    if (egress) playRandom("frog", 5);
-  }, [egress]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ======= LOSS: click → drown → disappear → wait flipbook → restart =======
-  // 1) Detect entering DROP state and kick off audio sequencing
-  const prevFinishRef = useRef(finishReason);
-  useEffect(() => {
-    if (finishReason === "drop" && prevFinishRef.current !== "drop") {
-      // stash the exact pad that killed us
-      const r = frogRow;
-      const c = frogCol;
-
-      // Activate loss sequence gating restart
-      setLossSeq({ active: true, row: r, col: c, disappearDone: false });
-
-      // Play drown immediately
-      playRandom("frog_drown", 3);
-
-      // After a short beat, play lily disappear (must be AFTER drown)
-      clearTimeout(lossTimerRef.current);
-      lossTimerRef.current = setTimeout(() => {
-        setLossSeq((s) => ({ ...s, disappearDone: true }));
-      }, 600); // a hair longer than one flipbook step (~24fps)
-    }
-    prevFinishRef.current = finishReason;
-    return () => clearTimeout(lossTimerRef.current);
-  }, [finishReason, frogRow, frogCol]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 2) Only when the *trap tile* finished dissolving AND disappear sound fired → restart
-  useEffect(() => {
-    if (!lossSeq.active) return;
-    const key =
-      lossSeq.row != null && lossSeq.col != null
-        ? `${lossSeq.row}:${lossSeq.col}`
-        : null;
-
-    if (key && lossSeq.disappearDone && dissolvedPads[key]) {
-      // Now it's safe to refresh the board and re-enter
+  // loss gate: drown→disappear→wait dissolve→restart (spawn+entry)
+  const { lossSeq } = useLossSequence({
+    finishReason,
+    frogRow,
+    frogCol,
+    dissolvedPads,
+    onRestart: () => {
       bumpSpawnWave();
       triggerEntry();
-      // reset loss sequence gate
-      setLossSeq({ active: false, row: null, col: null, disappearDone: false });
-    }
-  }, [lossSeq, dissolvedPads, bumpSpawnWave, triggerEntry]);
+    },
+  });
 
-  /* ---------- LOSE overlay (frog_lose_1..8) ---------- */
-  const [loseAnim, setLoseAnim] = useState(null); // { x, y, facingDeg }
+  // lose overlay position / anim
+  const [loseAnim, setLoseAnim] = useState(null);
   useEffect(() => {
     if (finishReason === "drop") {
-      const c = captureCurrentPerchCenter();
+      const c = captureCurrentPerchCenter?.();
       if (c) setLoseAnim({ x: c.x, y: c.y, facingDeg: frogFacingDeg });
-    } else {
-      setLoseAnim(null);
-    }
+    } else setLoseAnim(null);
   }, [finishReason, frogFacingDeg, captureCurrentPerchCenter]);
 
   const overlayFrogActiveForRock = isJumping || Boolean(entry);
-  // Hide pad frog while jumping, egressing, not playing, losing, OR winning (so wipe shows)
   const overlayFrogActiveForLilies =
     isJumping ||
     Boolean(egress) ||
@@ -459,7 +200,7 @@ export default function GameBoard() {
     Boolean(loseAnim) ||
     showWinOverlay;
 
-  /* -------------------- RENDER -------------------- */
+  // ===== RENDER =====
   return (
     <div className="relative w-full h-full" ref={boardRef}>
       {/* ROWS VIEWPORT */}
@@ -527,7 +268,6 @@ export default function GameBoard() {
                                   }}
                                 />
                               </div>
-
                               {showDrops && traps.has(col) && (
                                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-[6]">
                                   <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_0_2px_rgba(255,0,0,0.35)]" />
@@ -568,27 +308,10 @@ export default function GameBoard() {
                             />
                           )}
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-10">
-                          {`x${mult.toFixed(2)}`.split("").map((char, idx) => {
-                            const { src, w, h, dy } = symbolToImage(
-                              char,
-                              false
-                            );
-                            return (
-                              <img
-                                key={idx}
-                                src={src}
-                                alt={char}
-                                className="object-contain transition-all duration-500 ease-in-out"
-                                style={{
-                                  width: w,
-                                  height: h,
-                                  transform: `translateY(${dy}px)`,
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
+                        <NumberGlyphs
+                          text={`x${mult.toFixed(2)}`}
+                          color="gray"
+                        />
                       </div>
                     </div>
                   </div>
@@ -626,15 +349,12 @@ export default function GameBoard() {
                       const isTrap = traps.has(col);
                       const isTrapAndRevealed = revealThisRow && isTrap;
                       const clickable = isRowClickable(rowIndexGlobal);
-
                       const { bob, tilt, drift, dur, delay } = floatParams(
                         rowIndexGlobal,
                         col
                       );
-
                       const popKey = getWaterPopKey(rowIndexGlobal, col);
                       const k = `${rowIndexGlobal}:${col}`;
-
                       const doWinWipe = winWipeKey > 0 && showWinOverlay;
 
                       return (
@@ -657,6 +377,7 @@ export default function GameBoard() {
                             zIndex: isFrogHere ? 10 : 1,
                           }}
                           title={clickable ? "Jump" : ""}
+                          type="button"
                         >
                           {/* WATER-POP underlay */}
                           {popKey ? (
@@ -688,11 +409,7 @@ export default function GameBoard() {
                               zIndex: 1,
                             }}
                           >
-                            {/* Tiles logic:
-                                - trap revealed: forward 1→10 then hide
-                                - WIN WIPE: forward 1→10 for ALL pads then hide
-                                - spawn: backward 10→1
-                             */}
+                            {/* Tile logic: trap reveal / win wipe / spawn */}
                             {isTrapAndRevealed || doWinWipe ? (
                               dissolvedPads[k] ? (
                                 <div
@@ -700,7 +417,6 @@ export default function GameBoard() {
                                 />
                               ) : (
                                 <FlipbookImage
-                              
                                   key={`wipe-${winWipeKey}-row${rowIndexGlobal}-col${col}-${
                                     rowRevealKey[rowIndexGlobal] || 0
                                   }`}
@@ -731,7 +447,7 @@ export default function GameBoard() {
                                     start={1}
                                     end={10}
                                     size={LILY_IMG}
-                                    direction="backward" // 10 → 1
+                                    direction="backward"
                                     fps={28}
                                     delay={
                                       0.02 * (rowIndexGlobal % 5) + 0.01 * col
@@ -863,33 +579,16 @@ export default function GameBoard() {
                               />
                             )}
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center gap-0.5 z-10">
-                            {`x${mult.toFixed(2)}`
-                              .split("")
-                              .map((char, idx) => {
-                                const { src, w, h, dy } = symbolToImage(
-                                  char,
-                                  highlightRow === rowIndexGlobal
-                                );
-                                return (
-                                  <img
-                                    key={idx}
-                                    src={src}
-                                    alt={char}
-                                    className="object-contain transition-all duration-500 ease-in-out"
-                                    style={{
-                                      width: w,
-                                      height: h,
-                                      transform: `translateY(${dy}px) scale(${
-                                        highlightRow === rowIndexGlobal
-                                          ? 1.2
-                                          : 1
-                                      })`,
-                                    }}
-                                  />
-                                );
-                              })}
-                          </div>
+                          <NumberGlyphs
+                            text={`x${mult.toFixed(2)}`}
+                            color={
+                              highlightRow === rowIndexGlobal
+                                ? "yellow"
+                                : "gray"
+                            }
+                            className=""
+                            scaleOn={highlightRow === rowIndexGlobal}
+                          />
                         </div>
                       );
                     })()}
@@ -901,7 +600,7 @@ export default function GameBoard() {
         </motion.div>
       </div>
 
-      {/* ROCK (rotate 270°) */}
+      {/* ROCK */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none z-10">
         <div
           ref={rockRef}
@@ -915,7 +614,6 @@ export default function GameBoard() {
             height={ROCK_IMG}
             className="object-contain -rotate-90"
           />
-          {/* Static frog on rock */}
           {frogRow === -1 && !overlayFrogActiveForRock && (
             <motion.div
               initial={{ scale: 0.9, y: 4, opacity: 0.9 }}
@@ -958,11 +656,9 @@ export default function GameBoard() {
               restDelta: 0.2,
             }}
             onAnimationComplete={() => {
-              if (landedOnceRef.current) return;
-              landedOnceRef.current = true;
               // LAND: land_0..4
               playRandom("land", 5);
-              handleFrogJumpEnd();
+              handleFrogJumpEndLocal();
             }}
             style={{
               width: FROG_SIZE,
@@ -1058,27 +754,6 @@ export default function GameBoard() {
         </motion.div>
       )}
 
-      {showTutorial && (
-        <SwipeTutorial
-          show
-          routes={tutorialRoutes}
-          getTileCenter={(row, col) => {
-            const pad = document.querySelector(
-              `[data-row="${row}"][data-col="${col}"]`
-            );
-            if (!pad || !boardRef.current) return null;
-            const br = boardRef.current.getBoundingClientRect();
-            const rect = pad.getBoundingClientRect();
-            return {
-              x: rect.left - br.left + rect.width / 2,
-              y: rect.top - br.top + rect.height / 2,
-            };
-          }}
-          tileRadius={LILY_BTN / 2}
-          onAnyUserAction={() => resetIdle()}
-        />
-      )}
-
       {/* OVERLAY FROG — LOSE */}
       {loseAnim && (
         <motion.div className="relative z-[70]" style={{ y: rowsY }}>
@@ -1090,10 +765,7 @@ export default function GameBoard() {
               opacity: 1,
               scale: 1,
             }}
-            animate={{
-              opacity: [1, 1, 0.9, 0.0],
-              scale: [1, 0.98, 0.96],
-            }}
+            animate={{ opacity: [1, 1, 0.9, 0.0], scale: [1, 0.98, 0.96] }}
             transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
             onAnimationComplete={() => setLoseAnim(null)}
             style={{ width: FROG_SIZE, height: FROG_SIZE }}
@@ -1115,7 +787,6 @@ export default function GameBoard() {
           style={{ willChange: "transform, opacity" }}
         >
           <div className="relative select-none">
-            {/* Glow-spread — overlapped pulses (smooth) */}
             {[0, 0.6, 1.2].map((delay, i) => (
               <motion.img
                 key={`glow-spread-${i}`}
@@ -1134,7 +805,6 @@ export default function GameBoard() {
               />
             ))}
 
-            {/* Big rotating + breathing glow */}
             <motion.img
               src="/glow.png"
               alt=""
@@ -1152,7 +822,6 @@ export default function GameBoard() {
               }}
             />
 
-            {/* Bigger rotating + breathing sparkles */}
             <motion.img
               src="/sparkles.png"
               alt=""
@@ -1170,7 +839,6 @@ export default function GameBoard() {
               }}
             />
 
-            {/* Win tile card */}
             <img
               src="/win-tile.png"
               alt=""
@@ -1180,7 +848,6 @@ export default function GameBoard() {
               style={{ width: 360, height: "auto" }}
             />
 
-            {/* Text inside win tile (on top) */}
             <div className="pointer-events-none absolute inset-0 z-[40] flex flex-col items-center justify-center">
               <div className="text-3xl font-extrabold tracking-wide text-orange-300 drop-shadow">
                 CONGRATULATIONS!
@@ -1212,24 +879,6 @@ export default function GameBoard() {
           </div>
         </motion.div>
       )}
-
-      <Swipe
-        active={showTutorial}
-        routes={tutorialRoutes}
-        getTileCenter={(row, col) => {
-          const pad = document.querySelector(
-            `[data-row="${row}"][data-col="${col}"]`
-          );
-          if (!pad || !boardRef.current) return null;
-          const br = boardRef.current.getBoundingClientRect();
-          const rect = pad.getBoundingClientRect();
-          return {
-            x: rect.left - br.left + rect.width / 2,
-            y: rect.top - br.top + rect.height / 2,
-          };
-        }}
-        onDone={() => console.log("swipe finished")}
-      />
     </div>
   );
 }

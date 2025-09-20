@@ -1,9 +1,30 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 
 /**
+ * useEgressEntry
+ *
  * Handles frog egress (side exit on win/collect) and entry (from bottom when idle).
- * You provide utilities to know "from" and "to" centers.
+ * You provide helpers to compute "from" and "to" centers:
+ *  - captureCurrentPerchCenter(): {x,y} of the frog's current perch (pad/rock)
+ *  - getRockCenter(): {x,y} of the rock center
+ *
+ * Params:
+ *  - finishReason: 'collect' | 'all' | 'drop' | null
+ *  - frogCol: number | null         // used to decide left/right egress
+ *  - frogFacingDeg: number          // initial facing for entry
+ *  - boardRef: RefObject<HTMLElement>
+ *  - getRockCenter: () => {x:number,y:number} | null
+ *  - captureCurrentPerchCenter: () => {x:number,y:number} | null
+ *  - frogSize: number               // px; used to push egress fully off-screen
+ *
+ * Returns:
+ *  - egress: { from:{x,y}, to:{x,y}, facingDeg:number } | null
+ *  - setEgress: React.Dispatch      // exposed for one-off overrides/cancellation
+ *  - entry:  { from:{x,y}, to:{x,y}, facingDeg:number } | null
+ *  - setEntry:  React.Dispatch
+ *  - triggerEntry(): void           // start bottom->rock entry animation
  */
 export default function useEgressEntry({
   finishReason,
@@ -17,30 +38,40 @@ export default function useEgressEntry({
   const [egress, setEgress] = useState(null);
   const [entry, setEntry] = useState(null);
 
-  // trigger side egress on win/collect
+  // Trigger side egress on win/collect
   useEffect(() => {
     if (finishReason !== "collect" && finishReason !== "all") return;
-    const from = captureCurrentPerchCenter();
-    if (!from || !boardRef.current) return;
+    const from = captureCurrentPerchCenter?.();
+    const boardEl = boardRef?.current;
+    if (!from || !boardEl || !Number.isFinite(frogSize)) return;
 
-    const boardW = boardRef.current.getBoundingClientRect().width;
-    const goLeft = (frogCol ?? 2) <= 2;
+    const { width: boardW } = boardEl.getBoundingClientRect();
+
+    // Default to "left half" if frogCol is null/undefined
+    const col = Number.isFinite(frogCol) ? frogCol : 2;
+    const goLeft = col <= 2;
+
+    // Push well off-screen so the frog fully exits
     const toX = goLeft ? -frogSize * 2 : boardW + frogSize * 2;
     const to = { x: toX, y: from.y - 20 };
     const facingDeg = goLeft ? 180 : 0;
-    setEgress({ from, to, facingDeg });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finishReason]);
 
-  // helper to enter from bottom towards rock
-  function triggerEntry() {
-    if (!boardRef.current) return;
-    const to = getRockCenter();
-    const b = boardRef.current.getBoundingClientRect();
+    setEgress({ from, to, facingDeg });
+  }, [finishReason, frogCol, frogSize, boardRef, captureCurrentPerchCenter]);
+
+  // Enter from bottom towards rock
+  const triggerEntry = useCallback(() => {
+    const boardEl = boardRef?.current;
+    if (!boardEl) return;
+
+    const to = getRockCenter?.();
     if (!to) return;
-    const from = { x: to.x, y: b.height + 100 };
+
+    const { height: boardH } = boardEl.getBoundingClientRect();
+    const from = { x: to.x, y: boardH + 100 };
+
     setEntry({ from, to, facingDeg: frogFacingDeg });
-  }
+  }, [boardRef, getRockCenter, frogFacingDeg]);
 
   return { egress, setEgress, entry, setEntry, triggerEntry };
 }

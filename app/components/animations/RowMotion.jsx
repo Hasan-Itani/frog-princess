@@ -1,23 +1,54 @@
 "use client";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 
-export default function RowMotion({ children }) {
+/**
+ * RowMotion
+ * Smooth fade + slide animation for list rows or items.
+ *
+ * Props:
+ * - as: semantic element (default "div")
+ * - initialY: starting Y offset (default -18)
+ * - fadeDuration: fade in/out duration (default 0.18s)
+ * - layoutDuration: layout spring duration (default 0.28s)
+ */
+export default function RowMotion({
+  as: As = motion.div,
+  children,
+  initialY = -18,
+  fadeDuration = 0.18,
+  layoutDuration = 0.28,
+  ...rest
+}) {
   return (
-    <motion.div
+    <As
       layout
-      initial={{ opacity: 0, y: -18 }}
+      initial={{ opacity: 0, y: initialY }}
       animate={{
         opacity: 1,
         y: 0,
         transition: {
-          opacity: { duration: 0.18 },
-          layout: { duration: 0.28, ease: [0.2, 0.8, 0.2, 1] },
+          opacity: { duration: fadeDuration },
+          layout: { duration: layoutDuration, ease: [0.2, 0.8, 0.2, 1] },
         },
       }}
-      // fade the leaving row, don't push it down—let layout move everyone together
-      exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.18 } }}
+      exit={{
+        opacity: 0,
+        scale: 0.98,
+        transition: { duration: fadeDuration },
+      }}
+      style={{ willChange: "transform, opacity" }}
+      {...rest}
     >
       {children}
-    </motion.div>
+    </As>
   );
 }
+
+RowMotion.propTypes = {
+  as: PropTypes.elementType,
+  children: PropTypes.node.isRequired,
+  initialY: PropTypes.number,
+  fadeDuration: PropTypes.number,
+  layoutDuration: PropTypes.number,
+};

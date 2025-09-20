@@ -1,5 +1,9 @@
+/* Tailwind base/utilities */
 @import "tailwindcss";
 
+/* =========================
+   Theme Variables
+   ========================= */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,6 +16,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Dark mode defaults */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,12 +24,16 @@
   }
 }
 
+/* Base document styles (fallback fonts; Tailwind can override via classes) */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* =========================
+   Font Faces
+   ========================= */
 @font-face {
   font-family: "FuturaPT";
   src: url("/fonts/FuturaPT-Heavy.woff") format("woff");
@@ -49,6 +58,11 @@ body {
   font-display: swap;
 }
 
+/* =========================
+   Text / Element Animations
+   ========================= */
+
+/* Pulsing headline glow */
 @keyframes pulse-text {
   0%,
   100% {
@@ -60,11 +74,11 @@ body {
     text-shadow: 0 0 15px rgba(255, 255, 255, 1);
   }
 }
-
 .pulse-text {
   animation: pulse-text 1.2s infinite ease-in-out;
 }
 
+/* Simple fade-in for panels/modals */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -75,11 +89,11 @@ body {
     transform: scale(1);
   }
 }
-
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
+/* Pop-in scale animation for small UI elements */
 @keyframes scaleUp {
   0% {
     transform: scale(0.2);
@@ -94,34 +108,11 @@ body {
     opacity: 1;
   }
 }
-
 .animate-scaleUp {
   animation: scaleUp 0.2s ease-out both;
 }
 
-.custom-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(56, 189, 248, 0.7) transparent;
-}
-
-.custom-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.custom-scroll::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, 0.35);
-  border-radius: 9999px;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.7);
-  border-radius: 9999px;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.9);
-}
-/* Subtle scale pulse for the start overlay */
+/* Subtle breathing pulse (used on start overlay CTA) */
 @keyframes subtle-breathe {
   0%,
   100% {
@@ -131,7 +122,6 @@ body {
     transform: scale(1.03);
   }
 }
-
 .pulse-soft {
   animation: subtle-breathe 3s ease-in-out infinite;
   transform-origin: center;
@@ -139,8 +129,12 @@ body {
   backface-visibility: hidden;
 }
 
-/* Water bob animation (parametrized with CSS vars) */
-/* Water bobbing animation for floating on the sea */
+/* =========================
+   Game / Board Animations
+   ========================= */
+
+/* Water bobbing (parametrized via CSS variables)
+   Usage: set --dur, --delay, --bob, --drift, --tiltPos, --tiltNeg on the element */
 @keyframes water-bob {
   0% {
     transform: translate3d(0, 0, 0) rotate(var(--tiltPos, 0deg));
@@ -164,7 +158,6 @@ body {
     transform: translate3d(0, 0, 0) rotate(var(--tiltPos, 0deg));
   }
 }
-
 .water-bob {
   animation: water-bob var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
   transform-origin: center;
@@ -172,7 +165,7 @@ body {
   backface-visibility: hidden;
 }
 
-/* Frog hop for the "jump" phase */
+/* Frog hop (short vertical hop + slight scale) */
 @keyframes frog-hop {
   0% {
     transform: translate3d(0, 0, 0) scale(1);
@@ -188,33 +181,30 @@ body {
   animation: frog-hop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-/* If you don't already have this, an example of water-bob using CSS vars:
-   .water-bob reads --dur, --delay, --bob, --drift, --tiltPos, --tiltNeg */
-@keyframes wb-bob {
-  0% {
-    transform: translateX(0) translateY(0) rotate(0deg);
-  }
-  25% {
-    transform: translateX(var(--drift)) translateY(calc(-1 * var(--bob)))
-      rotate(var(--tiltPos));
-  }
-  50% {
-    transform: translateX(0) translateY(0) rotate(0deg);
-  }
-  75% {
-    transform: translateX(calc(-1 * var(--drift))) translateY(var(--bob))
-      rotate(var(--tiltNeg));
-  }
-  100% {
-    transform: translateX(0) translateY(0) rotate(0deg);
-  }
-}
-.water-bob {
-  animation: wb-bob var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
-  will-change: transform;
-}
-/* Freeze the lily under the frog (and during a jump) so landing is crisp */
+/* Freeze bobbing (use on lily under the frog during jump/land) */
 .no-bob {
   animation: none !important;
   transform: none !important;
+}
+
+/* =========================
+   Scrollbar Styling
+   ========================= */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.7) transparent;
+}
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.35);
+  border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.7);
+  border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.9);
 }

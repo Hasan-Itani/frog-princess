@@ -1,4 +1,5 @@
 "use client";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useGame } from "./useGame";
 import { dropsForLevel } from "./useDrops";
@@ -11,10 +12,9 @@ import {
 } from "./useBoardVisuals";
 
 const DEFAULT_ROCK_FACING = -120;
-
-const HOP_MS = 360;
 const SIT_MS = 10;
 
+/** Row opacity falloff relative to the current level */
 function opacityForRow(rowIndex, level) {
   if (rowIndex === level) return 1;
   if (rowIndex === level - 1) return 0.5;
@@ -26,18 +26,29 @@ function opacityForRow(rowIndex, level) {
   return 0.2;
 }
 
+/** Deterministic trap positions for a row (stable per runSeed) */
 function trapsForRow(levelIdx, padsPerRow, runSeed) {
-  const want = Math.min(dropsForLevel(levelIdx), padsPerRow - 1);
+  const want = Math.min(dropsForLevel(levelIdx), padsPerRow - 1); // never all pads
   const traps = new Set();
-  let x = (runSeed ^ ((levelIdx + 1) * 2654435761)) >>> 0;
+  let x = (runSeed ^ ((levelIdx + 1) * 2654435761)) >>> 0; // mix with row
   const mod = 0x7fffffff;
+
   while (traps.size < want) {
-    x = (1103515245 * x + 12345) % mod;
+    x = (1103515245 * x + 12345) % mod; // LCG
     traps.add(Math.abs(x) % padsPerRow);
   }
   return traps;
 }
 
+/**
+ * useBoard
+ *
+ * Owns the interactive board logic:
+ * - frog position/phase/facing
+ * - visible window paging
+ * - trap generation (per-row, stable per-run)
+ * - reveal flow, jump handling, and win/loss side-effects
+ */
 export default function useBoard() {
   const {
     isPlaying,
@@ -50,20 +61,25 @@ export default function useBoard() {
     levelsCount,
   } = useGame();
 
-  const [frogRow, setFrogRow] = useState(-1);
+  // Frog state
+  const [frogRow, setFrogRow] = useState(-1); // -1 == on rock
   const [frogCol, setFrogCol] = useState(2);
-  const [frogPhase, setFrogPhase] = useState("idle");
+  const [frogPhase, setFrogPhase] = useState("idle"); // idle | jump | curl
   const [frogFacingDeg, setFrogFacingDeg] = useState(DEFAULT_ROCK_FACING);
 
+  // Run/reveal state
   const [runSeed, setRunSeed] = useState(null);
-  const [revealedMap, setRevealedMap] = useState({});
+  const [revealedMap, setRevealedMap] = useState({}); // { [row]: true }
   const [revealAll, setRevealAll] = useState(false);
 
+  // Motion state
   const [isJumping, setIsJumping] = useState(false);
-  const [jumpMeta, setJumpMeta] = useState(null);
+  const [jumpMeta, setJumpMeta] = useState(null); // { row, col, trap, starting }
 
+  // Paging (windowed rows)
   const [windowBase, setWindowBase] = useState(0);
 
+  // Keep the window base aligned to the current level (when not mid-jump)
   useEffect(() => {
     if (isJumping) return;
     const base = Math.floor(level / WINDOW_SIZE) * WINDOW_SIZE;
@@ -71,6 +87,7 @@ export default function useBoard() {
     if (maxBase !== windowBase) setWindowBase(maxBase);
   }, [level, levelsCount, isJumping, windowBase]);
 
+  // Reset board when not playing and returned to level 0
   useEffect(() => {
     if (!isPlaying && level === 0) {
       setFrogRow(-1);
@@ -85,6 +102,7 @@ export default function useBoard() {
     }
   }, [isPlaying, level]);
 
+  /** Ensure a run seed exists (stable for the duration of a run) */
   const ensureRunSeed = useCallback(() => {
     if (runSeed !== null) return runSeed;
     const seedNow = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
@@ -92,6 +110,7 @@ export default function useBoard() {
     return seedNow;
   }, [runSeed]);
 
+  /** Visible row indices (top->bottom) for the current page */
   const visibleIndices = useMemo(() => {
     const remaining = Math.max(0, levelsCount - windowBase);
     const pageSize = Math.min(WINDOW_SIZE, remaining);
@@ -104,9 +123,10 @@ export default function useBoard() {
   const pageSize = visibleIndices.length;
   const isFinalPage = pageSize < WINDOW_SIZE;
 
+  /** Get traps for a specific row (uses runSeed or a neutral preview seed) */
   const getTraps = useCallback(
     (rowIdx) => {
-      const seed = runSeed ?? 123456789;
+      const seed = runSeed ?? 123456789; // allow preview before start
       return trapsForRow(rowIdx, PADS_PER_ROW, seed);
     },
     [runSeed]
@@ -122,25 +142,22 @@ export default function useBoard() {
     [revealAll, revealedMap]
   );
 
+  /** Is a given row currently clickable (for the user to choose a pad)? */
   const isRowClickable = useCallback(
     (rowIdx) => {
-      const canStartNewRun =
-        !isPlaying && level === 0 && !revealAll && !showWinOverlay;
-      return (
-        rowIdx === level &&
-        (isPlaying || canStartNewRun) &&
-        !revealAll &&
-        !showWinOverlay &&
-        !isJumping
-      );
+      if (revealAll || showWinOverlay || isJumping) return false;
+      const canStartNewRun = !isPlaying && level === 0;
+      return rowIdx === level && (isPlaying || canStartNewRun);
     },
     [isPlaying, level, revealAll, showWinOverlay, isJumping]
   );
 
+  /** Handle pad click: maybe start run, set frog target/phase, evaluate trap */
   const onPadClick = useCallback(
     (rowIdx, col) => {
       if (revealAll || showWinOverlay || isJumping) return;
       if (rowIdx !== level) return;
+      if (level >= levelsCount) return; // extra guard
 
       const starting = !isPlaying;
       if (starting) {
@@ -150,6 +167,7 @@ export default function useBoard() {
 
       const seed = runSeed ?? ensureRunSeed();
 
+      // Face toward the clicked column; if frog is off-screen or behind, face from rock column 2
       const fromCol = frogRow < 0 || frogRow < windowBase ? 2 : frogCol;
       setFrogFacingDeg(angleToCol(fromCol, col));
 
@@ -168,6 +186,7 @@ export default function useBoard() {
       showWinOverlay,
       isJumping,
       level,
+      levelsCount,
       isPlaying,
       startRun,
       runSeed,
@@ -178,6 +197,7 @@ export default function useBoard() {
     ]
   );
 
+  /** Called when the frog jump animation ends; decides win/lose flow */
   const onFrogJumpEnd = useCallback(() => {
     if (!jumpMeta) return;
     const { row, trap, starting } = jumpMeta;
@@ -185,6 +205,7 @@ export default function useBoard() {
     setFrogPhase("idle");
 
     if (trap) {
+      // Reveal everything, curl the frog, and trigger a drop
       setTimeout(() => {
         const full = {};
         for (let i = 0; i < levelsCount; i++) full[i] = true;
@@ -199,6 +220,7 @@ export default function useBoard() {
         setJumpMeta(null);
       }, SIT_MS);
     } else {
+      // Mark row revealed and advance
       setRevealedMap((m) => ({ ...m, [row]: true }));
       advanceOneLevel(starting);
 

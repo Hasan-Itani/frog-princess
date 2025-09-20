@@ -5,15 +5,15 @@
  * - MUSIC: single looping background track (ambience OR basic_background)
  * - SFX:   pooled one-shots (button, land_*, frog_*, etc.)
  *
- * Files live in /public:
+ * Files expected under /public:
  *   - /gameaudio.json
- *   - /sounds/mp3/gameaudio.mp3
+ *   - /sounds/gameaudio.mp3            ← update if you store it under /sounds/mp3/
  */
 
 import { useMemo } from "react";
 
 const SPRITE_JSON_URL = "/gameaudio.json";
-const SPRITE_URL = "/sounds/gameaudio.mp3";
+const SPRITE_URL = "/sounds/gameaudio.mp3"; // change to "/sounds/mp3/gameaudio.mp3" if that’s your path
 
 // Treat these names as "background music" even if JSON.loop=false
 const BG_NAMES = new Set(["ambience", "basic_background"]);
@@ -21,6 +21,7 @@ const BG_NAMES = new Set(["ambience", "basic_background"]);
 let SPRITEMAP = null;
 let spriteLoadPromise = null;
 
+/** Build a normalized { name: {start,end,loop,duration} } map */
 function buildMap(json) {
   const out = {};
   const raw = (json && json.spritemap) || {};
@@ -37,6 +38,7 @@ function buildMap(json) {
   return out;
 }
 
+/** Ensure we load and memoize the sprite JSON once */
 async function ensureSpriteLoaded() {
   if (SPRITEMAP) return SPRITEMAP;
   if (!spriteLoadPromise) {
@@ -44,7 +46,7 @@ async function ensureSpriteLoaded() {
       .then((r) => r.json())
       .then((j) => (SPRITEMAP = buildMap(j)))
       .catch((e) => {
-        console.error("Failed to load /gameaudio.json", e);
+        console.error("Failed to load", SPRITE_JSON_URL, e);
         SPRITEMAP = {};
         return SPRITEMAP;
       });
@@ -52,59 +54,75 @@ async function ensureSpriteLoaded() {
   return spriteLoadPromise;
 }
 
-// =============== singleton manager ===============
+// ================= singleton manager =================
 let singleton = null;
 
 function createManager() {
   // ---- MUSIC channel (single audio element) ----
   const music = new Audio(SPRITE_URL);
   music.preload = "auto";
-  music.loop = false; // we loop inside the segment manually
+  music.loop = false; // we loop segment manually to avoid boundary pops
 
-  let musicTrack = null;         // 'ambience' | 'basic_background' | null
+  let musicTrack = null; // 'ambience' | 'basic_background' | null
   let musicShouldLoop = false;
   let musicMuted = false;
   let musicVolume = 0.1;
 
-  const LOOP_MARGIN = 0.035; // safety to avoid decoder edge pops
+  const LOOP_MARGIN = 0.035; // safety margin to avoid decoder edge pops
+  let rafId = 0; // ensure only one loop supervisor runs
+
+  function cancelLoopRAF() {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  }
 
   function tickMusicLoop() {
-    if (!musicTrack || !musicShouldLoop) return;
+    if (!musicTrack || !musicShouldLoop) {
+      cancelLoopRAF();
+      return;
+    }
     const seg = SPRITEMAP[musicTrack];
-    if (!seg) return;
+    if (!seg) {
+      cancelLoopRAF();
+      return;
+    }
     if (music.currentTime >= seg.end - LOOP_MARGIN) {
       try {
         music.currentTime = seg.start + 0.01;
-      } catch {}
+      } catch {
+        /* noop */
+      }
     }
-    // keep ticking as long as we’re looping this track
-    if (musicTrack && musicShouldLoop) {
-      requestAnimationFrame(tickMusicLoop);
-    }
+    rafId = requestAnimationFrame(tickMusicLoop);
   }
 
   async function playMusic(name) {
     await ensureSpriteLoaded();
-    const seg = SPRITEMAP[name];
+    const seg = SPRITEMAP?.[name];
     if (!seg) return;
 
     musicTrack = name;
-    // Loop music if JSON says loop OR if it’s a known BG name
     musicShouldLoop = seg.loop || BG_NAMES.has(name);
 
     music.muted = musicMuted;
     music.volume = musicMuted ? 0 : musicVolume;
 
     try {
-      // ensure ready then seek into segment
+      // Nudge autoplay readiness on first interaction-sensitive browsers
       if (music.readyState < 1 && music.paused) {
         try {
           await music.play();
           music.pause();
-        } catch {}
+        } catch {
+          /* user gesture required; we'll try play below */
+        }
       }
-      music.currentTime = seg.start + 0.01;
-    } catch {}
+      music.currentTime = (seg.start ?? 0) + 0.01;
+    } catch {
+      /* seek might fail until metadata is ready */
+    }
 
     // (re)start playback
     if (music.paused) {
@@ -114,16 +132,21 @@ function createManager() {
         // will succeed after first user gesture
       }
     }
-    // start loop supervisor
-    requestAnimationFrame(tickMusicLoop);
+
+    // start/refresh loop supervisor
+    cancelLoopRAF();
+    if (musicShouldLoop) rafId = requestAnimationFrame(tickMusicLoop);
   }
 
   function stopMusic() {
     musicShouldLoop = false;
     musicTrack = null;
+    cancelLoopRAF();
     try {
       music.pause();
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }
 
   function setMusicMuted(next) {
@@ -170,7 +193,7 @@ function createManager() {
 
   async function playSfx(name) {
     await ensureSpriteLoaded();
-    const seg = SPRITEMAP[name];
+    const seg = SPRITEMAP?.[name];
     if (!seg) return;
 
     const ch = getFreeSfx();
@@ -183,19 +206,25 @@ function createManager() {
         try {
           await ch.el.play();
           ch.el.pause();
-        } catch {}
+        } catch {
+          /* user gesture required */
+        }
       }
-      ch.el.currentTime = seg.start + 0.005;
+
+      ch.el.currentTime = (seg.start ?? 0) + 0.005;
       await ch.el.play();
 
-      const stopDelay = Math.max(0, seg.duration * 1000 - 2);
+      const stopDelay = Math.max(0, Math.floor(seg.duration * 1000) - 2);
       const ts = performance.now() + stopDelay;
       ch.stopAt = ts;
+
       setTimeout(() => {
-        if (ch.stopAt !== ts) return;
+        if (ch.stopAt !== ts) return; // stolen/reused
         try {
           ch.el.pause();
-        } catch {}
+        } catch {
+          /* noop */
+        }
         ch.busy = false;
       }, stopDelay);
     } catch {
@@ -226,14 +255,13 @@ function createManager() {
     if (unlocked) return;
     unlocked = true;
     await ensureSpriteLoaded();
-    // start whatever you prefer as default
     await playMusic(bgName);
   }
 
-  // ---- friendly generic APIs (optional) ----
+  // ---- friendly generic API ----
   async function play(name) {
     await ensureSpriteLoaded();
-    if (BG_NAMES.has(name) || SPRITEMAP[name]?.loop) return playMusic(name);
+    if (BG_NAMES.has(name) || SPRITEMAP?.[name]?.loop) return playMusic(name);
     return playSfx(name);
   }
 
@@ -261,13 +289,15 @@ function createManager() {
 }
 
 export default function useAudio() {
+  // Create the singleton lazily in the browser only
   if (typeof window !== "undefined" && !singleton) {
     singleton = createManager();
-    // warm up JSON
+    // Warm the JSON map
     ensureSpriteLoaded();
   }
   const mgr = singleton;
 
+  // Stable facade: returns no-throw wrappers (safe if mgr not ready yet)
   return useMemo(
     () => ({
       // music

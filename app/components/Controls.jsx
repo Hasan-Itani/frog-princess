@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useGame } from "../hooks/useGame";
 import IconButton from "./ui/IconButton";
 import CollectButton from "./ui/CollectButton";
 import { useDebug } from "../hooks/useDebug";
 import { dropsForLevel } from "../hooks/useDrops";
-import useAudio from "../hooks/useAudio";
+import useAudio from "../hooks/audio/useAudio";
 
+/**
+ * Controls
+ * - Top row: Music mute toggle, collect button, settings
+ * - Middle row: Balance, bet -, bet display, bet +
+ * - Bottom: Debug helpers (drops reveal)
+ */
 export default function Controls({ onOpenSettings }) {
   const {
     balance,
     bet,
     format,
-    // we’ll keep using game.muted as the MUSIC mute ui flag
+    // we use game.muted as the MUSIC mute UI flag
     muted,
     setMuted,
     isPlaying,
@@ -29,28 +35,25 @@ export default function Controls({ onOpenSettings }) {
   } = useGame();
 
   const { showDrops, toggleDrops } = useDebug();
-  const showCollect = isPlaying && level > 0 && !showWinOverlay;
-  const displayLevel = Math.min(level + 1, levelsCount);
-  const dropsCount = Math.min(dropsForLevel(level), 4);
 
   const {
-    unlock,
-    // music
-    playMusic,
-    setMusicMuted,
-    isMusicMuted,
-    // sfx
-    playSfx,
-    setSfxMuted,
-    isSfxMuted,
+    unlock, // unlock audio on first user gesture
+    setMusicMuted, // music channel mute (SFX unaffected)
+    playSfx, // button/click sounds
   } = useAudio();
 
-  const unlockedRef = useRef(false);
-  const [sfxMutedUI, setSfxMutedUI] = useState(isSfxMuted());
+  // ----- derived UI state -----
+  const showCollect = isPlaying && level > 0 && !showWinOverlay;
+  const displayLevel = Math.min(level + 1, levelsCount);
+  // clamp level index for drops calc to avoid out-of-range at end state
+  const dropsCount = dropsForLevel(
+    Math.min(level, Math.max(0, levelsCount - 1))
+  );
 
+  // ----- one-time audio unlock on first pointer gesture -----
+  const unlockedRef = useRef(false);
   useEffect(() => {
     if (unlockedRef.current) return;
-
     const once = () => {
       unlockedRef.current = true;
       unlock("basic_background"); // or "ambience"
@@ -60,6 +63,7 @@ export default function Controls({ onOpenSettings }) {
     return () => window.removeEventListener("pointerdown", once, true);
   }, [unlock]);
 
+  // ----- handlers -----
   const handleIncrement = () => {
     playSfx("button");
     incrementBet();
@@ -69,20 +73,19 @@ export default function Controls({ onOpenSettings }) {
     decrementBet();
   };
   const handleCollect = () => {
+    // CollectButton already plays its own SFX via the provided playSound
     collectNow();
   };
-
-  // MUSIC mute (uses game.muted state for UI)
   const handleMusicToggle = () => {
     playSfx("button");
     const next = !muted;
-    setMuted(next); // keep game state in sync
-    setMusicMuted(next); // only affects music, not SFX
+    setMuted(next); // reflect in game state
+    setMusicMuted(next); // apply to music channel only
   };
 
   return (
     <div className="relative z-20 pointer-events-auto w-full text-white px-3 py-2 space-y-2">
-      {/* top row: MUSIC + SFX + settings */}
+      {/* Top row: MUSIC + SFX + settings */}
       <div className="flex items-stretch justify-between">
         <div className="flex items-center gap-2">
           {/* MUSIC */}
@@ -99,7 +102,10 @@ export default function Controls({ onOpenSettings }) {
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="inline-block px-10 py-1 mb-1 text-[10px] leading-3 text-center text-white rounded-xl bg-black/60">
+          <div
+            className="inline-block px-10 py-1 mb-1 text-[10px] leading-3 text-center text-white rounded-xl bg-black/60"
+            aria-live="polite"
+          >
             AVOID {dropsCount} DROP{dropsCount !== 1 ? "S" : ""} ON LEVEL{" "}
             {displayLevel}
           </div>
@@ -125,17 +131,18 @@ export default function Controls({ onOpenSettings }) {
             onOpenSettings();
           }}
           alt="Tabs"
+          title="Open settings"
         />
       </div>
 
-      {/* middle row: bet controls */}
+      {/* Middle row: bet controls */}
       <div className="flex items-center justify-between">
         <div className="text-left">
           <div className="text-[12px] mt-3 leading-4 opacity-70 text-center text-[#64faff] font-bold">
             BALANCE
           </div>
           <div className="font-bold">
-            {format(balance)} <font color="#ffc700">EUR</font>
+            {format(balance)} <span className="text-[#ffc700]">EUR</span>
           </div>
         </div>
 
@@ -150,13 +157,14 @@ export default function Controls({ onOpenSettings }) {
             disabled={isPlaying || !canDecrementBet}
             onClick={handleDecrement}
             alt="Decrease bet"
+            title="Decrease bet"
           />
           <div className="text-center">
             <div className="text-[12px] mt-5 leading-4 opacity-70 text-center text-[#64faff] font-bold">
               BET
             </div>
             <div className="font-bold">
-              {format(bet)} <font color="#ffc700">EUR</font>
+              {format(bet)} <span className="text-[#ffc700]">EUR</span>
             </div>
           </div>
           <IconButton
@@ -169,6 +177,7 @@ export default function Controls({ onOpenSettings }) {
             disabled={isPlaying || !canIncrementBet}
             onClick={handleIncrement}
             alt="Increase bet"
+            title="Increase bet"
           />
         </div>
 
@@ -184,11 +193,10 @@ export default function Controls({ onOpenSettings }) {
         </div>
       </div>
 
-    
-
-      {/* debug */}
+      {/* Debug */}
       <div className="pt-1">
         <button
+          type="button"
           onClick={toggleDrops}
           className="px-2 py-1 text-[10px] bg-red-600 text-white rounded shadow"
           title="Debug: show/hide all drops"

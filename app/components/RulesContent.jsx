@@ -4,6 +4,11 @@ import ImgLily from "./ui/ImgLily";
 import AwardsGrid from "./AwardsGrid";
 import FunctionRow from "./ui/FunctionRow";
 
+/**
+ * RulesContent
+ * Static, scrollable content for the Rules/Info tab.
+ * Keeps markup minimal and presentation-driven via existing UI atoms.
+ */
 export default function RulesContent() {
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden pr-2 custom-scroll w-full">
@@ -19,7 +24,7 @@ export default function RulesContent() {
         <div className="space-y-2">
           <PartTitle>SELECT WATER LILY</PartTitle>
           <div className="flex items-center justify-center">
-            <ImgLily size={64} />
+            <ImgLily size={64} alt="Water lily" />
           </div>
           <TinyMuted>
             CHOOSE A WATER LILY FOR THE NEXT LEVEL TO GET YOUR PRIZE
@@ -32,7 +37,7 @@ export default function RulesContent() {
         <div className="space-y-2">
           <PartTitle>COLLECT PRIZE ANYTIME</PartTitle>
           <div className="flex items-center justify-center">
-            <ImgLily size={64} />
+            <ImgLily size={64} alt="Water lily" />
           </div>
           <TinyMuted>
             PRESS THE COLLECT BUTTON ANYTIME TO GET THE PRIZE, DISPLAYED ON THE

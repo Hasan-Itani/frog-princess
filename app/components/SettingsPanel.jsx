@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useGame } from "../hooks/useGame";
 import IconButton from "./ui/IconButton";
@@ -7,14 +8,23 @@ import { PartTitle, TinyMuted } from "./ui/SectionText";
 import ImgLily from "./ui/ImgLily";
 import RulesContent from "./RulesContent";
 import useBetQuickPick from "../hooks/useBetQuickPick";
-import useAudio from "../hooks/useAudio";
+import useAudio from "../hooks/audio/useAudio";
 
+/**
+ * SettingsPanel
+ * Slide-in panel with three tabs:
+ *  - Bet: quick-pick bet amounts
+ *  - Rules: static rules content
+ *  - Settings: audio (music/SFX) controls
+ */
 export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
-  const [phase, setPhase] = useState("enter");
+  const [phase, setPhase] = useState("enter"); // enter → idle → exit
 
+  // Game state
   const { BET_STEPS = [], betIndex, isPlaying, format, setMuted } = useGame();
   const { setBetTarget } = useBetQuickPick();
 
+  // Audio facade (safe wrappers even if not yet unlocked)
   const {
     // music
     getMusicVolume,
@@ -31,24 +41,31 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
     setSfxMuted,
   } = useAudio();
 
+  // Local UI state mirrors
   const [musicVol, setMusicVol] = useState(() =>
-    Math.round(getMusicVolume() * 100)
+    Math.round((getMusicVolume?.() ?? 0.7) * 100)
   );
-  const [sfxVol, setSfxVol] = useState(() => Math.round(getSfxVolume() * 100));
-  const [musicMuteUI, setMusicMuteUI] = useState(isMusicMuted());
-  const [sfxMuteUI, setSfxMuteUI] = useState(isSfxMuted());
+  const [sfxVol, setSfxVol] = useState(() =>
+    Math.round((getSfxVolume?.() ?? 0.9) * 100)
+  );
+  const [musicMuteUI, setMusicMuteUI] = useState(() => !!isMusicMuted?.());
+  const [sfxMuteUI, setSfxMuteUI] = useState(() => !!isSfxMuted?.());
   const [bgChoice, setBgChoice] = useState(
-    getCurrentMusic() || "basic_background"
+    () => getCurrentMusic?.() || "basic_background"
   );
 
+  // Slide-in on mount
   useEffect(() => {
     const t = setTimeout(() => setPhase("idle"), 10);
     return () => clearTimeout(t);
   }, []);
 
+  // Close with exit animation
   function handleClose() {
     setPhase("exit");
-    setTimeout(onClose, 450);
+    setTimeout(() => {
+      onClose?.();
+    }, 450);
   }
 
   return (
@@ -65,12 +82,16 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
       ].join(" ")}
       aria-modal="true"
       role="dialog"
+      aria-labelledby="settings-panel-header"
     >
-      {/* Backdrop */}
+      {/* Backdrop (click-through; panel has its own close) */}
       <div className="absolute inset-0 bg-black/85 pointer-events-none" />
 
       {/* Header */}
-      <div className="relative bg-black/15 backdrop-blur-md text-sky-300 text-lg font-extrabold text-center py-3">
+      <div
+        id="settings-panel-header"
+        className="relative bg-black/15 backdrop-blur-md text-sky-300 text-lg font-extrabold text-center py-3"
+      >
         {activeTab === "bet" && "BET SETTINGS"}
         {activeTab === "rules" && "RULES & INFO"}
         {activeTab === "settings" && "SETTINGS"}
@@ -78,24 +99,30 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
 
       {/* Content */}
       <div className="relative flex-1 min-h-0 p-4 overflow-hidden flex flex-col items-center">
+        {/* BET TAB */}
         {activeTab === "bet" && (
           <div className="w-full max-w-[420px] mx-auto space-y-3 text-center">
             <PartTitle>PLACE YOUR BET</PartTitle>
             <TinyMuted>CHOOSE YOUR BET ON THE COUNTER</TinyMuted>
 
+            {/* (Decorative) counter row */}
             <div className="flex items-center justify-center gap-3">
               <button
+                type="button"
                 disabled
                 className="w-9 h-9 rounded-full bg-white/80 text-black font-bold grid place-items-center cursor-not-allowed"
                 aria-disabled="true"
+                aria-label="Decrease bet (disabled)"
               >
                 -
               </button>
               <ImgLily size={60} className="drop-shadow" />
               <button
+                type="button"
                 disabled
                 className="w-9 h-9 rounded-full bg-white/80 text-black font-bold grid place-items-center cursor-not-allowed"
                 aria-disabled="true"
+                aria-label="Increase bet (disabled)"
               >
                 +
               </button>
@@ -103,6 +130,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
 
             <BlueDivider />
 
+            {/* Quick pick grid */}
             <div className="grid grid-cols-4 gap-2">
               {BET_STEPS.map((betValue, idx) => {
                 const label =
@@ -112,10 +140,11 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                 const isSelected = idx === betIndex;
                 return (
                   <button
+                    type="button"
                     key={idx}
                     onClick={() => {
                       setBetTarget(idx);
-                      playSfx("button");
+                      playSfx?.("button");
                     }}
                     disabled={isPlaying}
                     className={[
@@ -141,15 +170,17 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           </div>
         )}
 
+        {/* RULES TAB */}
         {activeTab === "rules" && <RulesContent />}
 
+        {/* SETTINGS TAB */}
         {activeTab === "settings" && (
           <div className="w-full max-w-[520px] mx-auto space-y-6">
             <TinyMuted>
               Music and sound effects are controlled separately.
             </TinyMuted>
 
-            {/* BG track picker */}
+            {/* Background track picker */}
             <div className="p-4 rounded-xl border border-sky-400/25 bg-white/5 space-y-3">
               <div className="font-bold text-sky-300 mb-2">
                 Background Track
@@ -160,6 +191,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                   { key: "basic_background", label: "Basic" },
                 ].map((opt) => (
                   <button
+                    type="button"
                     key={opt.key}
                     className={[
                       "px-3 py-2 rounded-md font-bold border transition",
@@ -169,8 +201,8 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                     ].join(" ")}
                     onClick={() => {
                       setBgChoice(opt.key);
-                      playMusic(opt.key); // switches instantly
-                      playSfx("button");
+                      playMusic?.(opt.key); // switch instantly
+                      playSfx?.("button");
                     }}
                   >
                     {opt.label}
@@ -185,6 +217,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
               <div className="flex items-center justify-between">
                 <div className="font-bold text-sky-300">Music Volume</div>
                 <button
+                  type="button"
                   className={[
                     "px-2 py-1 rounded text-xs font-bold",
                     musicMuteUI ? "bg-red-600/80" : "bg-green-600/80",
@@ -192,9 +225,9 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                   onClick={() => {
                     const next = !musicMuteUI;
                     setMusicMuteUI(next);
-                    setMusicMuted(next);
-                    setMuted(next); // keep game.muted in sync with MUSIC
-                    playSfx("button");
+                    setMusicMuted?.(next);
+                    setMuted?.(next); // keep game.muted in sync with MUSIC
+                    playSfx?.("button");
                   }}
                 >
                   {musicMuteUI ? "Unmute" : "Mute"}
@@ -210,8 +243,9 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setMusicVol(v);
-                  setMusicVolume(v / 100);
+                  setMusicVolume?.(v / 100);
                 }}
+                aria-label="Music volume"
               />
               <div className="text-sm opacity-80">{musicVol}%</div>
             </div>
@@ -221,6 +255,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
               <div className="flex items-center justify-between">
                 <div className="font-bold text-sky-300">SFX Volume</div>
                 <button
+                  type="button"
                   className={[
                     "px-2 py-1 rounded text-xs font-bold",
                     sfxMuteUI ? "bg-red-600/80" : "bg-green-600/80",
@@ -228,8 +263,8 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                   onClick={() => {
                     const next = !sfxMuteUI;
                     setSfxMuteUI(next);
-                    setSfxMuted(next);
-                    playSfx("button");
+                    setSfxMuted?.(next);
+                    playSfx?.("button");
                   }}
                 >
                   {sfxMuteUI ? "Unmute" : "Mute"}
@@ -245,12 +280,13 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setSfxVol(v);
-                  setSfxVolume(v / 100);
+                  setSfxVolume?.(v / 100);
                 }}
+                aria-label="SFX volume"
               />
               <div className="text-sm opacity-80">{sfxVol}%</div>
               <TinyMuted>
-                Clicks (e.g., +/-) are SFX and won’t be muted by Music.
+                Clicks (e.g., +/-) are SFX and won't be muted by Music.
               </TinyMuted>
             </div>
           </div>
@@ -266,8 +302,8 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           activeIcon="/cash_selected.png"
           isActive={activeTab === "bet"}
           onClick={() => {
-            setActiveTab("bet");
-            playSfx("button");
+            setActiveTab?.("bet");
+            playSfx?.("button");
           }}
           alt="Cash"
         />
@@ -278,8 +314,8 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           activeIcon="/info_selected.png"
           isActive={activeTab === "rules"}
           onClick={() => {
-            setActiveTab("rules");
-            playSfx("button");
+            setActiveTab?.("rules");
+            playSfx?.("button");
           }}
           alt="Info"
         />
@@ -290,8 +326,8 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           activeIcon="/settings_selected.png"
           isActive={activeTab === "settings"}
           onClick={() => {
-            setActiveTab("settings");
-            playSfx("button");
+            setActiveTab?.("settings");
+            playSfx?.("button");
           }}
           alt="Settings"
         />
@@ -303,7 +339,7 @@ export default function SettingsPanel({ activeTab, setActiveTab, onClose }) {
           isActive={false}
           onClick={() => {
             handleClose();
-            playSfx("button");
+            playSfx?.("button");
           }}
           alt="Close"
         />
